@@ -1,0 +1,9 @@
+using System.Threading.Tasks;
+
+namespace ArasIsletmem.Core.UnitOfWorks;
+
+public interface IUnitOfWork
+{
+    Task CommitAsync();
+    void Commit();
+}

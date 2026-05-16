@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  aras-mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: aras_isletmem_mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SecurePassword123!
+    ports:
+      - "1433:1433"
+
+  aras-mongodb:
+    image: mongo:latest
+    container_name: aras_isletmem_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  aras-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: aras_isletmem_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672" # RabbitMQ Yönetim Paneli arayüzü
+
+volumes:
+  mongo_data:
