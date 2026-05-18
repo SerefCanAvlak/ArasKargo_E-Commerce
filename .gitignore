@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # PowerShell scripts
 *.ps1
+
+# AI Agent Files
+agent.md
