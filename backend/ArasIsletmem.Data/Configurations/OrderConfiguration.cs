@@ -18,13 +18,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .IsRequired()
             .HasMaxLength(50); // MongoDB ObjectId representation
 
-        builder.Property(x => x.CustomerName)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.Property(x => x.CustomerAddress)
-            .IsRequired()
-            .HasMaxLength(500);
+        builder.Property(x => x.CustomerId)
+            .IsRequired();
 
         builder.Property(x => x.CargoTrackingNumber)
             .HasMaxLength(100);

@@ -25,11 +25,12 @@ public class OrderService : IOrderService
 
     public async Task<string> CreateOrderAsync(OrderCreateDto orderDto)
     {
+        var customerId = orderDto.CustomerId == Guid.Empty ? Guid.Parse("a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d") : orderDto.CustomerId;
+
         var order = new Order
         {
             ProductId = orderDto.ProductId,
-            CustomerName = orderDto.CustomerName,
-            CustomerAddress = orderDto.CustomerAddress,
+            CustomerId = customerId,
             TotalAmount = orderDto.Amount,
             OrderNumber = $"#{new Random().Next(1000, 9999)}",
             OrderStatus = OrderStatus.PaymentReceived,

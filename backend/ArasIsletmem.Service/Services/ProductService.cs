@@ -41,6 +41,16 @@ public class ProductService : IProductService
         return await _productRepository.GetAllAsync();
     }
 
+    public async Task<(IEnumerable<Product> Items, long TotalCount)> GetPagedProductsAsync(int page, int pageSize)
+    {
+        return await _productRepository.GetPagedAsync(page, pageSize);
+    }
+
+    public async Task<(IEnumerable<Product> Items, long TotalCount)> GetProductsBySellerPagedAsync(string sellerId, int page, int pageSize)
+    {
+        return await _productRepository.GetPagedAsync(page, pageSize, x => x.SellerId == sellerId);
+    }
+
     public async Task<Product?> GetProductByIdAsync(string id)
     {
         return await _productRepository.GetByIdAsync(id);

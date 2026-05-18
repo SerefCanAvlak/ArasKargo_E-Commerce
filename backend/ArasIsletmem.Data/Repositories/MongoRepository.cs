@@ -52,4 +52,19 @@ public class MongoRepository<T> : IMongoRepository<T> where T : class
         var filter = Builders<T>.Filter.Eq("Id", id);
         await _collection.DeleteOneAsync(filter);
     }
+
+    public async Task<(IEnumerable<T> Items, long TotalCount)> GetPagedAsync(int page, int pageSize, Expression<Func<T, bool>>? predicate = null)
+    {
+        var filter = predicate != null 
+            ? Builders<T>.Filter.Where(predicate) 
+            : Builders<T>.Filter.Empty;
+
+        var totalCount = await _collection.CountDocumentsAsync(filter);
+        var items = await _collection.Find(filter)
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
 }

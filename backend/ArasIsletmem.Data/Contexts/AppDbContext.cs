@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Seller> Sellers { get; set; } = null!;
     public DbSet<Wallet> Wallets { get; set; } = null!;
     public DbSet<Order> Orders { get; set; } = null!;
+    public DbSet<Customer> Customers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -25,6 +25,10 @@ public class SellerConfiguration : IEntityTypeConfiguration<Seller>
             .IsRequired()
             .HasMaxLength(20);
 
+        builder.Property(x => x.Email)
+            .IsRequired()
+            .HasMaxLength(100);
+
         // One-to-One relationship between Seller and Wallet
         builder.HasOne(s => s.Wallet)
             .WithOne(w => w.Seller)

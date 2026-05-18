@@ -13,4 +13,5 @@ public interface IMongoRepository<T> where T : class
     Task AddAsync(T entity);
     Task UpdateAsync(string id, T entity);
     Task RemoveAsync(string id);
+    Task<(IEnumerable<T> Items, long TotalCount)> GetPagedAsync(int page, int pageSize, Expression<Func<T, bool>>? predicate = null);
 }

@@ -13,10 +13,62 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Swagger JWT Config
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Aras Isletmem API", Version = "v1" });
+    
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            System.Array.Empty<string>()
+        }
+    });
+});
+
+// JWT Authentication Configuration
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var key = System.Text.Encoding.UTF8.GetBytes(jwtSection["Key"] ?? "ThisIsAVerySecretKeyForArasKargoECommerceProject2026AndShouldBeAtLeast64BytesLongToAvoidHmacSha512Exceptions!");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSection["Issuer"] ?? "ArasIsletmemAPI",
+        ValidateAudience = true,
+        ValidAudience = jwtSection["Audience"] ?? "ArasIsletmemClient",
+        ValidateLifetime = true,
+        ClockSkew = System.TimeSpan.Zero
+    };
+});
 
 // MSSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -43,8 +95,16 @@ builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Product>>
     return new MongoRepository<ArasIsletmem.Core.Entities.Product>(settings, "Products");
 });
 
+// Mongo Basket Reposu
+builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Basket>>(provider => {
+    var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MongoDbSettings>>();
+    return new MongoRepository<ArasIsletmem.Core.Entities.Basket>(settings, "Baskets");
+});
+
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
 var app = builder.Build();
@@ -56,6 +116,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection(); // Yönlendirmede POST body'si kaybolmasın diye dev ortamında kapattık
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
@@ -66,16 +127,47 @@ using (var scope = app.Services.CreateScope())
     var mockSellerId = Guid.Parse("d3b07384-d113-4956-a55e-214545645645");
     if (!dbContext.Sellers.Any(s => s.Id == mockSellerId))
     {
-        dbContext.Sellers.Add(new ArasIsletmem.Core.Entities.Seller
+        using var hmac = new System.Security.Cryptography.HMACSHA512();
+        var seller = new ArasIsletmem.Core.Entities.Seller
         {
             Id = mockSellerId,
             CompanyName = "Test Satıcısı",
             TaxNumber = "1112223334",
             PhoneNumber = "05554443322",
-            IBAN = "TR123456789"
+            IBAN = "TR123456789",
+            Email = "seller@arasisletmem.com",
+            PasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes("123456")),
+            PasswordSalt = hmac.Key
+        };
+        dbContext.Sellers.Add(seller);
+
+        dbContext.Wallets.Add(new ArasIsletmem.Core.Entities.Wallet
+        {
+            SellerId = mockSellerId,
+            AvailableBalance = 1500.00m,
+            PendingBalance = 350.00m
         });
-        dbContext.SaveChanges();
     }
+
+    var mockCustomerId = Guid.Parse("a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d");
+    if (!dbContext.Customers.Any(c => c.Id == mockCustomerId))
+    {
+        using var hmac = new System.Security.Cryptography.HMACSHA512();
+        dbContext.Customers.Add(new ArasIsletmem.Core.Entities.Customer
+        {
+            Id = mockCustomerId,
+            FirstName = "Ali",
+            LastName = "Yılmaz",
+            Email = "ali.yilmaz@example.com",
+            PhoneNumber = "05321112233",
+            Address = "Örnek Mah. Test Sok. No:1",
+            City = "İstanbul",
+            District = "Kadıköy",
+            PasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes("123456")),
+            PasswordSalt = hmac.Key
+        });
+    }
+    dbContext.SaveChanges();
 }
 
 app.Run();

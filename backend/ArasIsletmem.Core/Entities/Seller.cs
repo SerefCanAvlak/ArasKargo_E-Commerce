@@ -9,6 +9,9 @@ public class Seller : BaseEntity
     public string? TaxNumber { get; set; }
     public string IBAN { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public byte[] PasswordHash { get; set; } = null!;
+    public byte[] PasswordSalt { get; set; } = null!;
     
     // Navigation properties
     public Wallet Wallet { get; set; } = null!;
