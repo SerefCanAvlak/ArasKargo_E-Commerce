@@ -46,4 +46,27 @@ public class OrdersController : ControllerBase
         await _orderService.UpdateOrderStatusAsync(id, status);
         return NoContent();
     }
+
+    /// <summary>
+    /// Satıcının "Kurye Çağır / Kargo Talebi Oluştur" butonuna basmasıyla tetiklenir.
+    /// Siparişi InCargo durumuna geçirir ve Aras Kargo kurye talebi oluşturur.
+    /// </summary>
+    [HttpPost("{orderId}/call-courier")]
+    public async Task<IActionResult> CallCourier(Guid orderId)
+    {
+        try
+        {
+            var trackingNumber = await _orderService.CallCourierAsync(orderId);
+            return Ok(new
+            {
+                message = "Kurye talebi alındı. Aras Kargo kapınızdan alacaktır.",
+                cargoTrackingNumber = trackingNumber
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
+

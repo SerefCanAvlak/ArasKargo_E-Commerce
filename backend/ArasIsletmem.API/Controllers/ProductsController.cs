@@ -76,6 +76,18 @@ public class ProductsController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Müşterinin satın alma linkine tıkladığında ürünü görüntülemesini sağlar.
+    /// Auth gerektirmez - herkese açık endpoint.
+    /// </summary>
+    [HttpGet("link/{slug}")]
+    public async Task<IActionResult> GetBySlug(string slug)
+    {
+        var product = await _productService.GetProductBySlugAsync(slug);
+        if (product == null) return NotFound(new { message = "Ürün bulunamadı veya artık aktif değil." });
+        return Ok(product);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {

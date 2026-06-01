@@ -101,6 +101,12 @@ public class ProductService : IProductService
         return await _productRepository.GetByIdAsync(id);
     }
 
+    public async Task<Product?> GetProductBySlugAsync(string slug)
+    {
+        var products = await _productRepository.FindAsync(p => p.Slug == slug && p.IsActive);
+        return products.FirstOrDefault();
+    }
+
     public async Task UpdateProductAsync(string id, ProductDto productDto)
     {
         var product = await _productRepository.GetByIdAsync(id);

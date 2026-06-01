@@ -12,6 +12,7 @@ public interface IProductService
     Task<(IEnumerable<Product> Items, long TotalCount)> GetPagedProductsAsync(int page, int pageSize);
     Task<(IEnumerable<Product> Items, long TotalCount)> GetProductsBySellerPagedAsync(string sellerId, int page, int pageSize);
     Task<Product?> GetProductByIdAsync(string id);
+    Task<Product?> GetProductBySlugAsync(string slug);
     Task UpdateProductAsync(string id, ProductDto productDto);
     Task DeleteProductAsync(string id);
 }

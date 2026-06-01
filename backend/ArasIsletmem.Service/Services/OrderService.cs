@@ -66,4 +66,29 @@ public class OrderService : IOrderService
             await _unitOfWork.CommitAsync();
         }
     }
+
+    public async Task<string> CallCourierAsync(Guid orderId)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId);
+        if (order == null)
+            throw new InvalidOperationException("Sipariş bulunamadı.");
+
+        if (order.OrderStatus != OrderStatus.Preparing)
+            throw new InvalidOperationException(
+                $"Kurye çağırmak için sipariş 'Preparing' durumunda olmalıdır. Mevcut durum: {order.OrderStatus}");
+
+        if (string.IsNullOrEmpty(order.CargoTrackingNumber))
+            throw new InvalidOperationException("Henüz kargo takip numarası üretilmemiş. Lütfen biraz bekleyin.");
+
+        order.OrderStatus = OrderStatus.InCargo;
+        _orderRepository.Update(order);
+        await _unitOfWork.CommitAsync();
+
+        return order.CargoTrackingNumber;
+    }
+
+    public async Task<IEnumerable<Order>> GetOrdersBySellerIdAsync(Guid sellerId)
+    {
+        return await _orderRepository.FindAsync(o => o.SellerId == sellerId);
+    }
 }
