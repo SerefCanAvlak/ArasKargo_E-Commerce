@@ -18,6 +18,15 @@ public class Product
     public List<string> Images { get; set; } = new List<string>();
     public string Slug { get; set; } = string.Empty;
     public string SharedLink { get; set; } = string.Empty;
+
+    // Denormalized Category Info
+    public string? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+
+    // Denormalized Brand Info
+    public string? BrandId { get; set; }
+    public string? BrandName { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

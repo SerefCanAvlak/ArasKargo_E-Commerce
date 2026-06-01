@@ -83,6 +83,8 @@ builder.Services.Configure<MongoDbSettings>(options =>
     options.ConnectionString = "mongodb://localhost:27017";
     options.DatabaseName = "ArasIsletmemMongoDb";
     options.ProductsCollectionName = "Products";
+    options.CategoriesCollectionName = "Categories";
+    options.BrandsCollectionName = "Brands";
 });
 
 // Dependency Injections
@@ -92,7 +94,19 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Mongo Product Reposu
 builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Product>>(provider => {
     var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MongoDbSettings>>();
-    return new MongoRepository<ArasIsletmem.Core.Entities.Product>(settings, "Products");
+    return new MongoRepository<ArasIsletmem.Core.Entities.Product>(settings, settings.Value.ProductsCollectionName);
+});
+
+// Mongo Category Reposu
+builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Category>>(provider => {
+    var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MongoDbSettings>>();
+    return new MongoRepository<ArasIsletmem.Core.Entities.Category>(settings, settings.Value.CategoriesCollectionName);
+});
+
+// Mongo Brand Reposu
+builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Brand>>(provider => {
+    var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<MongoDbSettings>>();
+    return new MongoRepository<ArasIsletmem.Core.Entities.Brand>(settings, settings.Value.BrandsCollectionName);
 });
 
 // Mongo Basket Reposu
@@ -103,6 +117,8 @@ builder.Services.AddScoped<IMongoRepository<ArasIsletmem.Core.Entities.Basket>>(
 
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
