@@ -24,7 +24,10 @@ import {
   Phone,
   ArrowLeft,
   ShieldCheck,
-  Zap
+  Zap,
+  Search,
+  Store,
+  Grid
 } from 'lucide-react';
 import './App.css';
 
@@ -75,13 +78,17 @@ function App() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState('');
 
-  // Seller App State
+  // Seller App Auth & State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('aras_seller_token') || '');
   const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'products' | 'orders' | 'wallet' | 'customerPortal'
   const [loginEmail, setLoginEmail] = useState('seller@arasisletmem.com');
   const [loginPassword, setLoginPassword] = useState('123456');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   
+  // Public Homepage search
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Data State
   const [dashboard, setDashboard] = useState(null);
   const [products, setProducts] = useState([]);
@@ -136,6 +143,28 @@ function App() {
     return () => window.removeEventListener('popstate', handleUrlRouting);
   }, []);
 
+  // Fetch products database for public homepage
+  useEffect(() => {
+    loadPublicProducts();
+  }, []);
+
+  const loadPublicProducts = async () => {
+    try {
+      const prodRes = await fetch(`${API_BASE}/api/products`);
+      if (prodRes.ok) {
+        const pData = await prodRes.json();
+        setProducts(pData.items || pData || []);
+        setIsDemoMode(false);
+      } else {
+        throw new Error('API down');
+      }
+    } catch (err) {
+      console.warn('API connection failed. Fallback to mock catalog.', err);
+      setIsDemoMode(true);
+      setProducts(MOCK_PRODUCTS);
+    }
+  };
+
   // Fetch product dynamically when client lands on /products/:slug
   useEffect(() => {
     if (publicSlug) {
@@ -161,7 +190,6 @@ function App() {
       if (match) {
         setPublicProduct(match);
       } else {
-        // Default to first mock product if slug doesn't match, to ensure working demo!
         setPublicProduct(MOCK_PRODUCTS[0]);
       }
     } finally {
@@ -188,6 +216,7 @@ function App() {
     if (token) {
       localStorage.setItem('aras_seller_token', token);
       setIsAuthenticated(true);
+      setIsLoginModalOpen(false);
     } else {
       localStorage.removeItem('aras_seller_token');
       setIsAuthenticated(false);
@@ -437,10 +466,9 @@ function App() {
     }
   };
 
-  // Client checkout logic for both simulations and public view
   const handleCustomerCheckout = async (e) => {
     e.preventDefault();
-    const productToBuy = publicProduct || products[0]; // fallback
+    const productToBuy = publicProduct || products[0];
     
     if (!productToBuy) {
       addToast('Lütfen satın almak istediğiniz ürünü seçin.', 'error');
@@ -500,7 +528,6 @@ function App() {
     }
   };
 
-  // Launch public page routing simulation
   const handleSimulatePublicLink = (slug) => {
     window.history.pushState({}, '', `/products/${slug}`);
     setPublicSlug(slug);
@@ -532,22 +559,28 @@ function App() {
     return product ? product.title : 'Bilinmeyen Ürün';
   };
 
+  // Filter products for the public homepage search bar
+  const filteredProducts = products.filter(product => 
+    product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // -------------------------------------------------------------
-  // VIEW: PUBLIC CLIENT VIEW AT /products/:slug
+  // VIEW 1: PUBLIC PRODUCT CHECKOUT PAGE AT /products/:slug
   // -------------------------------------------------------------
   if (publicSlug) {
     return (
       <div className="customer-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Navbar */}
         <header className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', marginBottom: '32px', borderTop: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={navigateToHome}>
             <div className="brand-logo-glow" style={{ width: '32px', height: '32px' }}>
               <LayoutDashboard size={18} style={{ color: '#fff' }} />
             </div>
-            <h1 className="brand-name" style={{ fontSize: '16px' }}>ARAS İŞLETMEM</h1>
+            <h1 className="brand-name" style={{ fontSize: '16px' }}>ARAS PASAJI</h1>
           </div>
           <button onClick={navigateToHome} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-            <ArrowLeft size={16} /> Satıcı Paneline Dön
+            <ArrowLeft size={16} /> Pasaj Vitrinine Dön
           </button>
         </header>
 
@@ -571,7 +604,7 @@ function App() {
               </div>
               <div>
                 <span style={{ fontSize: '11px', color: 'var(--primary)', background: 'var(--primary-glow)', padding: '4px 10px', borderRadius: '12px', fontWeight: 700, display: 'inline-block', marginBottom: '10px' }}>
-                  DİREKT SATIŞ NOKTASI
+                  GÜVENLİ SATIŞ NOKTASI
                 </span>
                 <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>{publicProduct.title}</h2>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.6' }}>{publicProduct.description}</p>
@@ -772,7 +805,7 @@ function App() {
                 Tekrar Satın Al
               </button>
               <button onClick={navigateToHome} className="btn btn-primary glow-btn">
-                Satıcı Paneline Dön
+                Pasaj Vitrinine Dön
               </button>
             </div>
           </div>
@@ -796,68 +829,186 @@ function App() {
   }
 
   // -------------------------------------------------------------
-  // VIEW: ADMIN SELLER DASHBOARD VIEW
+  // VIEW 2: PUBLIC E-COMMERCE MARKETPLACE HOMEPAGE (IF NOT LOGGED IN)
   // -------------------------------------------------------------
   if (!isAuthenticated) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-        <div className="glass-card modal-content" style={{ padding: '40px' }}>
-          <div className="brand-section" style={{ justifyContent: 'center', marginBottom: '32px' }}>
-            <div className="brand-logo-glow">
-              <LayoutDashboard size={24} style={{ color: '#fff' }} />
+      <div className="customer-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Navigation Bar */}
+        <header className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', borderTop: 'none', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={navigateToHome}>
+            <div className="brand-logo-glow" style={{ width: '36px', height: '36px' }}>
+              <LayoutDashboard size={20} style={{ color: '#fff' }} />
             </div>
             <div>
-              <h2 className="brand-name">ARAS İŞLETMEM</h2>
-              <p className="brand-tagline">Satıcı Yönetim Paneli</p>
+              <h1 className="brand-name" style={{ fontSize: '18px', margin: 0 }}>ARAS PASAJI</h1>
+              <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Yerel Ürün Pazarı</p>
             </div>
           </div>
           
-          <h2 style={{ textAlign: 'center', marginBottom: '24px', fontSize: '22px' }}>Hoş Geldiniz</h2>
+          <button onClick={() => setIsLoginModalOpen(true)} className="btn btn-primary glow-btn" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Store size={18} /> Satıcı Paneli Girişi
+          </button>
+        </header>
+
+        {/* Hero Section */}
+        <section className="glass-card" style={{ padding: '60px 40px', textAlign: 'center', background: 'radial-gradient(circle, rgba(237,28,36,0.06) 0%, rgba(0,0,0,0) 100%)', marginBottom: '40px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.1, pointerEvents: 'none' }}></div>
           
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label className="form-label">E-Posta Adresi</label>
-              <div style={{ position: 'relative' }}>
-                <User size={18} style={{ position: 'absolute', left: '16px', top: '14px', color: '#5e6475' }} />
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  style={{ paddingLeft: '48px' }} 
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="seller@arasisletmem.com"
-                  required
-                />
-              </div>
-            </div>
+          <span style={{ color: 'var(--primary)', background: 'var(--primary-glow)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '16px' }}>
+            🚀 Sıfır Komisyon, Doğrudan Alım
+          </span>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '42px', fontWeight: 800, letterSpacing: '-1px', lineHeight: '1.2', maxWidth: '800px', margin: '0 auto 16px' }}>
+            Sosyal Medya Satıcılarını Lojistik Güvencesiyle Keşfedin
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '600px', margin: '0 auto 32px', lineHeight: '1.6' }}>
+            Girişimcilerin komisyonsuz, doğrudan satış linkleriyle satışa sunduğu yerel ürünleri inceleyin. Kapınıza kadar hızlı **Aras Kargo** güvencesiyle gelsin!
+          </p>
 
-            <div className="form-group" style={{ marginBottom: '32px' }}>
-              <label className="form-label">Şifre</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} style={{ position: 'absolute', left: '16px', top: '14px', color: '#5e6475' }} />
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  style={{ paddingLeft: '48px' }} 
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••"
-                  required
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary glow-btn" style={{ width: '100%', padding: '14px' }}>
-              Giriş Yap <ArrowRight size={18} />
-            </button>
-          </form>
-
-          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary)' }}>TEST HESAP BİLGİLERİ:</span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>E-Posta:</b> seller@arasisletmem.com</span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>Şifre:</b> 123456</span>
+          {/* Search bar */}
+          <div style={{ maxWidth: '500px', margin: '0 auto', position: 'relative' }}>
+            <Search size={18} style={{ position: 'absolute', left: '16px', top: '15px', color: 'var(--text-muted)' }} />
+            <input 
+              type="text" 
+              className="form-input" 
+              style={{ paddingLeft: '48px', height: '48px', fontSize: '15px', borderRadius: '24px' }}
+              placeholder="Ürün adı, açıklama veya satıcı ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </div>
+        </section>
+
+        {/* Product Catalog marketplace Grid */}
+        <section style={{ flexGrow: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '22px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Grid size={18} style={{ color: 'var(--primary)' }} /> Vitrindeki Ürünler ({filteredProducts.length})
+            </h3>
+            {searchQuery && (
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                "<b>{searchQuery}</b>" için arama sonuçları
+              </span>
+            )}
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="glass-card" style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
+              <ShoppingBag size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <h3>Aramanıza Uygun Ürün Bulunamadı</h3>
+              <p style={{ marginTop: '8px' }}>Farklı kelimeler kullanarak tekrar arayabilirsiniz.</p>
+            </div>
+          ) : (
+            <div className="product-grid">
+              {filteredProducts.map(product => (
+                <div key={product.id} className="glass-card product-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="product-img-wrapper">
+                    <img 
+                      src={product.images && product.images[0] ? product.images[0] : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'} 
+                      alt={product.title} 
+                      className="product-img" 
+                    />
+                  </div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, fontFamily: 'var(--font-heading)' }}>{product.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px', height: '36px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {product.description}
+                  </p>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                    <span className="product-price" style={{ color: 'var(--primary)' }}>{product.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-delivered)', background: 'var(--color-delivered-bg)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Stokta Var</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                    <button 
+                      onClick={() => handleSimulatePublicLink(product.slug)} 
+                      className="btn btn-primary glow-btn"
+                      style={{ width: '100%', padding: '10px' }}
+                    >
+                      Detayları Gör / Satın Al <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Footer */}
+        <footer style={{ marginTop: '60px', padding: '40px 0 20px', textAlign: 'center', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}>
+          © 2026 Aras Pasajı - E-Ticaret ve Hızlı Lojistik Platformu. Aras Kargo entegrasyonu simüle edilmiştir.
+        </footer>
+
+        {/* Floating Seller Login Modal */}
+        {isLoginModalOpen && (
+          <div className="modal-overlay">
+            <div className="glass-card modal-content" style={{ padding: '40px', position: 'relative' }}>
+              <button 
+                onClick={() => setIsLoginModalOpen(false)} 
+                className="btn btn-secondary" 
+                style={{ position: 'absolute', right: '16px', top: '16px', minWidth: 'auto', padding: '6px 12px', borderRadius: '50%' }}
+              >
+                ✕
+              </button>
+              
+              <div className="brand-section" style={{ justifyContent: 'center', marginBottom: '32px' }}>
+                <div className="brand-logo-glow">
+                  <LayoutDashboard size={24} style={{ color: '#fff' }} />
+                </div>
+                <div>
+                  <h2 className="brand-name">ARAS İŞLETMEM</h2>
+                  <p className="brand-tagline">Satıcı Yönetim Paneli</p>
+                </div>
+              </div>
+              
+              <h2 style={{ textAlign: 'center', marginBottom: '24px', fontSize: '22px' }}>Hoş Geldiniz</h2>
+              
+              <form onSubmit={handleLogin}>
+                <div className="form-group">
+                  <label className="form-label">E-Posta Adresi</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={18} style={{ position: 'absolute', left: '16px', top: '14px', color: '#5e6475' }} />
+                    <input 
+                      type="email" 
+                      className="form-input" 
+                      style={{ paddingLeft: '48px' }} 
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="seller@arasisletmem.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '32px' }}>
+                  <label className="form-label">Şifre</label>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={18} style={{ position: 'absolute', left: '16px', top: '14px', color: '#5e6475' }} />
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      style={{ paddingLeft: '48px' }} 
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary glow-btn" style={{ width: '100%', padding: '14px' }}>
+                  Giriş Yap <ArrowRight size={18} />
+                </button>
+              </form>
+
+              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary)' }}>TEST HESAP BİLGİLERİ:</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>E-Posta:</b> seller@arasisletmem.com</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>Şifre:</b> 123456</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Floating Toasts */}
         <div className="toast-container">
@@ -872,6 +1023,9 @@ function App() {
     );
   }
 
+  // -------------------------------------------------------------
+  // VIEW 3: ADMIN SELLER DASHBOARD VIEW (AUTHENTICATED)
+  // -------------------------------------------------------------
   return (
     <div className="app-container">
       {/* Sidebar navigation */}
@@ -950,6 +1104,9 @@ function App() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={navigateToHome} className="btn btn-secondary" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <Store size={16} /> Pasaj Vitrinine Git
+            </button>
             {currentTab === 'products' && (
               <button onClick={() => setIsProductModalOpen(true)} className="btn btn-primary glow-btn">
                 <Plus size={18} /> Yeni Ürün Ekle
