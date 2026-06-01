@@ -27,7 +27,9 @@ import {
   Zap,
   Search,
   Store,
-  Grid
+  Grid,
+  ShoppingCart,
+  Trash2
 } from 'lucide-react';
 import './App.css';
 
@@ -78,18 +80,25 @@ function App() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState('');
 
-  // Seller App Auth & State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('aras_seller_token') || '');
-  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'products' | 'orders' | 'wallet' | 'customerPortal'
-  const [loginEmail, setLoginEmail] = useState('seller@arasisletmem.com');
-  const [loginPassword, setLoginPassword] = useState('123456');
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  // Authentication State
+  const [token, setToken] = useState(localStorage.getItem('aras_token') || '');
+  const [userRole, setUserRole] = useState(localStorage.getItem('aras_role') || ''); // 'Seller' | 'Customer' | ''
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('aras_email') || '');
   
-  // Public Homepage search
-  const [searchQuery, setSearchQuery] = useState('');
+  // Login Gateway modal
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginRole, setLoginRole] = useState('Customer'); // 'Customer' | 'Seller'
+  const [loginEmail, setLoginEmail] = useState('ali.yilmaz@example.com');
+  const [loginPassword, setLoginPassword] = useState('123456');
 
-  // Data State
+  // Customer Shopping Basket State
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutStepOpen, setIsCheckoutStepOpen] = useState(false);
+  
+  // Dashboard & Catalog Data State
+  const [currentTab, setCurrentTab] = useState('dashboard'); // 'dashboard' | 'products' | 'orders' | 'wallet' | 'customerPortal'
+  const [searchQuery, setSearchQuery] = useState('');
   const [dashboard, setDashboard] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -106,7 +115,7 @@ function App() {
     imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'
   });
   
-  // Checkout Form State
+  // Checkout Shipping Form State
   const [checkoutForm, setCheckoutForm] = useState({
     firstName: 'Ali',
     lastName: 'Yılmaz',
@@ -122,6 +131,17 @@ function App() {
   
   const [toasts, setToasts] = useState([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Sync inputs on login switcher tab change
+  useEffect(() => {
+    if (loginRole === 'Customer') {
+      setLoginEmail('ali.yilmaz@example.com');
+      setLoginPassword('123456');
+    } else {
+      setLoginEmail('seller@arasisletmem.com');
+      setLoginPassword('123456');
+    }
+  }, [loginRole]);
 
   // Parse custom router path on mount and URL change
   useEffect(() => {
@@ -202,6 +222,7 @@ function App() {
     setPublicSlug(null);
     setPublicProduct(null);
     setCheckoutSuccess(false);
+    setIsCheckoutStepOpen(false);
   };
 
   const addToast = (message, type = 'success') => {
@@ -212,22 +233,27 @@ function App() {
     }, 4000);
   };
 
+  // Sync token, role, email to localStorage
   useEffect(() => {
     if (token) {
-      localStorage.setItem('aras_seller_token', token);
-      setIsAuthenticated(true);
-      setIsLoginModalOpen(false);
+      localStorage.setItem('aras_token', token);
+      localStorage.setItem('aras_role', userRole);
+      localStorage.setItem('aras_email', userEmail);
     } else {
-      localStorage.removeItem('aras_seller_token');
-      setIsAuthenticated(false);
+      localStorage.removeItem('aras_token');
+      localStorage.removeItem('aras_role');
+      localStorage.removeItem('aras_email');
     }
-  }, [token]);
+  }, [token, userRole, userEmail]);
 
+  // Load All Dashboard and App Data when Auth changes
   useEffect(() => {
-    if (isAuthenticated && !publicSlug) {
+    if (token && userRole === 'Seller' && !publicSlug) {
       fetchData();
+    } else if (token && userRole === 'Customer') {
+      fetchCart();
     }
-  }, [isAuthenticated, currentTab, publicSlug]);
+  }, [token, userRole, currentTab, publicSlug]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -322,11 +348,14 @@ function App() {
     });
   };
 
+  // Perform Auth Login for Customer or Seller
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const authPath = loginRole === 'Customer' ? 'api/Auth/customer/login' : 'api/Auth/seller/login';
+    
     try {
-      const response = await fetch(`${API_BASE}/api/Auth/seller/login`, {
+      const response = await fetch(`${API_BASE}/${authPath}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword })
@@ -337,12 +366,27 @@ function App() {
       }
 
       const data = await response.json();
+      setUserRole(loginRole);
+      setUserEmail(loginEmail);
       setToken(data.token);
-      addToast('Giriş başarıyla yapıldı. Aras İşletmem paneline hoş geldiniz!');
+      
+      addToast(`${loginRole === 'Customer' ? 'Müşteri' : 'Satıcı'} girişi başarıyla yapıldı!`);
+      setIsLoginModalOpen(false);
+      
+      if (loginRole === 'Seller') {
+        setCurrentTab('dashboard');
+      }
     } catch (err) {
-      console.warn('Backend login connection failed, bypass to visual demo.', err);
+      console.warn('Backend connection failed, bypass to visual demo.', err);
+      setUserRole(loginRole);
+      setUserEmail(loginEmail);
       setToken('mock-demo-jwt-token-val');
+      setIsLoginModalOpen(false);
+      
       addToast('Demo Modu: Çevrimdışı bağlantı ile giriş yapıldı.', 'info');
+      if (loginRole === 'Seller') {
+        setCurrentTab('dashboard');
+      }
     } finally {
       setLoading(false);
     }
@@ -350,10 +394,192 @@ function App() {
 
   const handleLogout = () => {
     setToken('');
-    setIsAuthenticated(false);
+    setUserRole('');
+    setUserEmail('');
+    setCart([]);
+    setIsCartOpen(false);
+    setIsCheckoutStepOpen(false);
     addToast('Oturum sonlandırıldı.');
   };
 
+  // -------------------------------------------------------------
+  // CUSTOMER BASKET / CART ACTIONS (MongoDB persistence)
+  // -------------------------------------------------------------
+  const fetchCart = async () => {
+    if (!token || userRole !== 'Customer') return;
+    try {
+      const res = await fetch(`${API_BASE}/api/baskets`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCart(data.items || []);
+      }
+    } catch (e) {
+      console.warn('API down, loading local mock cart state');
+    }
+  };
+
+  const handleAddToCart = async (productId) => {
+    if (!token || userRole !== 'Customer') {
+      addToast('Sepete eklemek için lütfen Müşteri Girişi yapın.', 'info');
+      setIsLoginModalOpen(true);
+      setLoginRole('Customer');
+      return;
+    }
+
+    try {
+      if (isDemoMode) {
+        setCart(prev => {
+          const match = prev.find(i => i.productId === productId);
+          if (match) {
+            return prev.map(i => i.productId === productId ? { ...i, quantity: i.quantity + 1 } : i);
+          }
+          return [...prev, { productId, quantity: 1 }];
+        });
+        addToast('Ürün sepetinize eklendi! 🛒');
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/baskets/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId, quantity: 1 })
+      });
+
+      if (!res.ok) throw new Error('Sepete eklenemedi.');
+      addToast('Ürün başarıyla MongoDB sepetinize eklendi! 🛒');
+      fetchCart();
+    } catch (e) {
+      addToast('Sepet hatası: ' + e.message, 'error');
+    }
+  };
+
+  const handleUpdateCartQty = async (productId, newQty) => {
+    if (newQty <= 0) {
+      handleRemoveFromCart(productId);
+      return;
+    }
+
+    try {
+      if (isDemoMode) {
+        setCart(prev => prev.map(i => i.productId === productId ? { ...i, quantity: newQty } : i));
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/baskets/items/${productId}?quantity=${newQty}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchCart();
+      }
+    } catch (e) {
+      addToast('Sepet güncelleme hatası: ' + e.message, 'error');
+    }
+  };
+
+  const handleRemoveFromCart = async (productId) => {
+    try {
+      if (isDemoMode) {
+        setCart(prev => prev.filter(i => i.productId !== productId));
+        addToast('Ürün sepetinizden çıkarıldı.');
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/baskets/items/${productId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        addToast('Ürün sepetinizden çıkarıldı.');
+        fetchCart();
+      }
+    } catch (e) {
+      addToast('Sepetten silme hatası: ' + e.message, 'error');
+    }
+  };
+
+  // -------------------------------------------------------------
+  // CART CHECKOUT LOGIC
+  // -------------------------------------------------------------
+  const handleCartCheckout = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+    setLoading(true);
+
+    try {
+      let lastOrderNumber = '';
+      
+      if (isDemoMode) {
+        lastOrderNumber = '#' + Math.floor(1000 + Math.random() * 9000);
+        cart.forEach(item => {
+          const product = products.find(p => p.id === item.productId) || MOCK_PRODUCTS[0];
+          const newMockOrder = {
+            id: 'o-' + Math.random().toString(36).substr(2, 9),
+            orderNumber: lastOrderNumber,
+            productId: item.productId,
+            totalAmount: product.price * item.quantity,
+            orderStatus: 1,
+            cargoTrackingNumber: null,
+            createdAt: new Date().toISOString()
+          };
+          setOrders(prev => [newMockOrder, ...prev]);
+        });
+        setCart([]);
+        setSuccessOrderNumber(lastOrderNumber);
+        setCheckoutSuccess(true);
+        setIsCartOpen(false);
+        setIsCheckoutStepOpen(false);
+        addToast('Sipariş başarıyla oluşturuldu! RabbitMQ Consumer simülasyonu başlatıldı.', 'success');
+        return;
+      }
+
+      // Loop through cart items and place order for each item in MSSQL
+      for (const item of cart) {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) continue;
+        
+        const res = await fetch(`${API_BASE}/api/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: item.productId,
+            customerId: SEEDED_CUSTOMER_ID,
+            amount: product.price * item.quantity
+          })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          lastOrderNumber = data.orderNumber;
+        }
+      }
+
+      // Clear MongoDB Basket
+      await fetch(`${API_BASE}/api/baskets`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      setCart([]);
+      setSuccessOrderNumber(lastOrderNumber || '#' + Math.floor(1000 + Math.random() * 9000));
+      setCheckoutSuccess(true);
+      setIsCartOpen(false);
+      setIsCheckoutStepOpen(false);
+      addToast('Sepet siparişleriniz başarıyla tamamlandı! Lojistik kodlar hazırlanıyor... 🚚', 'success');
+
+    } catch (err) {
+      addToast('Sepet ödeme hatası: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add Product (MongoDB)
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -405,67 +631,7 @@ function App() {
     }
   };
 
-  const copyToClipboard = (link) => {
-    navigator.clipboard.writeText(link);
-    addToast('Ürün Paylaşım Linki kopyalandı! Sosyal medyada paylaşmaya hazır. 🚀');
-  };
-
-  const handleCallCourier = async (orderId) => {
-    try {
-      if (isDemoMode) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, orderStatus: 3, cargoTrackingNumber: 'ARAS-' + Math.floor(1000000 + Math.random() * 9000000) } : o));
-        addToast('Kurye Çağrıldı! Kargo durum simülasyonu "Kargoda" olarak güncellendi.', 'success');
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/orders/${orderId}/call-courier`, {
-        method: 'POST'
-      });
-
-      if (!res.ok) throw new Error('Kurye çağrılamadı.');
-      
-      const data = await res.json();
-      addToast(`📦 ${data.message} Takip No: ${data.cargoTrackingNumber}`);
-      fetchData();
-    } catch (err) {
-      addToast('Lojistik hatası: ' + err.message, 'error');
-    }
-  };
-
-  const handleDeliverOrder = async (orderId) => {
-    try {
-      if (isDemoMode) {
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, orderStatus: 4 } : o));
-          setWallet(w => ({
-            availableBalance: w.availableBalance + order.totalAmount,
-            pendingBalance: w.pendingBalance - order.totalAmount
-          }));
-          addToast('Demo Modu: Sipariş teslim edildi! (Cüzdan bakiyeleri simüle edildi)');
-        }
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: '4' 
-      });
-
-      if (!res.ok) throw new Error('Durum güncellenemedi.');
-
-      addToast('Sipariş başarıyla "Teslim Edildi" olarak güncellendi! T-SQL Veritabanı tetikleyicisi (Trigger) çalıştı! ⚡');
-      
-      setTimeout(() => {
-        fetchData();
-      }, 500);
-
-    } catch (err) {
-      addToast('Güncelleme hatası: ' + err.message, 'error');
-    }
-  };
-
+  // Direct Checkout for Single Product Link Checkout simulation
   const handleCustomerCheckout = async (e) => {
     e.preventDefault();
     const productToBuy = publicProduct || products[0];
@@ -528,38 +694,85 @@ function App() {
     }
   };
 
+  const handleCallCourier = async (orderId) => {
+    try {
+      if (isDemoMode) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, orderStatus: 3, cargoTrackingNumber: 'ARAS-' + Math.floor(1000000 + Math.random() * 9000000) } : o));
+        addToast('Kurye Çağrıldı! Kargo durum simülasyonu "Kargoda" olarak güncellendi.', 'success');
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/call-courier`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) throw new Error('Kurye çağrılamadı.');
+      
+      const data = await res.json();
+      addToast(`📦 ${data.message} Takip No: ${data.cargoTrackingNumber}`);
+      fetchData();
+    } catch (err) {
+      addToast('Lojistik hatası: ' + err.message, 'error');
+    }
+  };
+
+  const handleDeliverOrder = async (orderId) => {
+    try {
+      if (isDemoMode) {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+          setOrders(prev => prev.map(o => o.id === orderId ? { ...o, orderStatus: 4 } : o));
+          setWallet(w => ({
+            availableBalance: w.availableBalance + order.totalAmount,
+            pendingBalance: w.pendingBalance - order.totalAmount
+          }));
+          addToast('Demo Modu: Sipariş teslim edildi! (Cüzdan bakiyeleri simüle edildi)');
+        }
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: '4' 
+      });
+
+      if (!res.ok) throw new Error('Durum güncellenemedi.');
+
+      addToast('Sipariş başarıyla "Teslim Edildi" olarak güncellendi! T-SQL Veritabanı tetikleyicisi (Trigger) çalıştı! ⚡');
+      
+      setTimeout(() => {
+        fetchData();
+      }, 500);
+
+    } catch (err) {
+      addToast('Güncelleme hatası: ' + err.message, 'error');
+    }
+  };
+
   const handleSimulatePublicLink = (slug) => {
     window.history.pushState({}, '', `/products/${slug}`);
     setPublicSlug(slug);
     setCheckoutSuccess(false);
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 1: return 'Ödeme Alındı';
-      case 2: return 'Hazırlanıyor';
-      case 3: return 'Kargoda';
-      case 4: return 'Teslim Edildi';
-      default: return 'Bilinmiyor';
-    }
+  // Helper values
+  const getProductById = (id) => {
+    return products.find(p => p.id === id) || MOCK_PRODUCTS.find(p => p.id === id) || {
+      title: 'Bilinmeyen Ürün',
+      price: 0,
+      images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60']
+    };
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 1: return 'received';
-      case 2: return 'preparing';
-      case 3: return 'incargo';
-      case 4: return 'delivered';
-      default: return '';
-    }
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => {
+      const prod = getProductById(item.productId);
+      return total + (prod.price * item.quantity);
+    }, 0);
   };
 
-  const getProductTitle = (prodId) => {
-    const product = products.find(p => p.id === prodId) || MOCK_PRODUCTS.find(p => p.id === prodId);
-    return product ? product.title : 'Bilinmeyen Ürün';
-  };
-
-  // Filter products for the public homepage search bar
+  // Search filter
   const filteredProducts = products.filter(product => 
     product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -571,7 +784,6 @@ function App() {
   if (publicSlug) {
     return (
       <div className="customer-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Navbar */}
         <header className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', marginBottom: '32px', borderTop: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={navigateToHome}>
             <div className="brand-logo-glow" style={{ width: '32px', height: '32px' }}>
@@ -584,14 +796,12 @@ function App() {
           </button>
         </header>
 
-        {/* Loading Indicator */}
         {loading && !publicProduct && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0' }}>
             <div className="pulse-icon" style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>Ürün bilgileri yükleniyor...</div>
           </div>
         )}
 
-        {/* Product Details & Purchase Form */}
         {publicProduct && !checkoutSuccess && (
           <div className="checkout-grid" style={{ flexGrow: 1 }}>
             <div className="product-showcase">
@@ -633,7 +843,6 @@ function App() {
               </div>
             </div>
 
-            {/* Billing checkout fields */}
             <div className="glass-card">
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Zap size={18} style={{ color: 'var(--primary)' }} /> Kolay Satın Al
@@ -778,7 +987,6 @@ function App() {
           </div>
         )}
 
-        {/* Checkout Success screen */}
         {checkoutSuccess && (
           <div className="glass-card" style={{ maxWidth: '600px', margin: '40px auto', padding: '48px 32px', textAlign: 'center', border: '1px solid rgba(0, 230, 118, 0.25)', boxShadow: '0 0 30px rgba(0, 230, 118, 0.1)' }}>
             <div className="brand-logo-glow" style={{ width: '64px', height: '64px', margin: '0 auto 24px', background: 'var(--color-delivered-bg)', border: '2px solid var(--color-delivered)', boxShadow: 'none' }}>
@@ -814,24 +1022,14 @@ function App() {
         <footer style={{ marginTop: 'auto', padding: '40px 0 20px', textAlign: 'center', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}>
           © 2026 Aras İşletmem Platformu. Aras Kargo entegrasyonu simüle edilmiştir.
         </footer>
-
-        {/* Floating Toasts */}
-        <div className="toast-container">
-          {toasts.map(toast => (
-            <div key={toast.id} className="toast" style={{ borderLeftColor: toast.type === 'error' ? '#ff3d00' : toast.type === 'info' ? '#00e5ff' : 'var(--primary)' }}>
-              {toast.type === 'error' ? <AlertCircle size={18} style={{ color: '#ff3d00' }} /> : toast.type === 'info' ? <Info size={18} style={{ color: '#00e5ff' }} /> : <CheckCircle size={18} style={{ color: 'var(--color-delivered)' }} />}
-              <span>{toast.message}</span>
-            </div>
-          ))}
-        </div>
       </div>
     );
   }
 
   // -------------------------------------------------------------
-  // VIEW 2: PUBLIC E-COMMERCE MARKETPLACE HOMEPAGE (IF NOT LOGGED IN)
+  // VIEW 2: PUBLIC E-COMMERCE MARKETPLACE HOMEPAGE (GUEST & CUSTOMER)
   // -------------------------------------------------------------
-  if (!isAuthenticated) {
+  if (!token || userRole === 'Customer') {
     return (
       <div className="customer-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Navigation Bar */}
@@ -842,13 +1040,36 @@ function App() {
             </div>
             <div>
               <h1 className="brand-name" style={{ fontSize: '18px', margin: 0 }}>ARAS PASAJI</h1>
-              <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Yerel Ürün Pazarı</p>
+              <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Güvenli Alışveriş</p>
             </div>
           </div>
           
-          <button onClick={() => setIsLoginModalOpen(true)} className="btn btn-primary glow-btn" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <Store size={18} /> Satıcı Paneli Girişi
-          </button>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            {/* Shopping Cart Trigger button with Badge */}
+            {userRole === 'Customer' && (
+              <button onClick={() => setIsCartOpen(true)} className="btn btn-secondary" style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center', minWidth: 'auto', padding: '10px 16px' }}>
+                <ShoppingCart size={18} />
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Sepetim</span>
+                {cart.length > 0 && <span className="cart-badge">{cart.reduce((s, i) => s + i.quantity, 0)}</span>}
+              </button>
+            )}
+
+            {token && userRole === 'Customer' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 600 }}>{userEmail}</p>
+                  <p style={{ fontSize: '9px', color: 'var(--color-delivered)', fontWeight: 700 }}>Alıcı Müşteri</p>
+                </div>
+                <button onClick={handleLogout} className="btn btn-secondary" style={{ minWidth: 'auto', padding: '8px', borderRadius: '50%' }} title="Çıkış Yap">
+                  <LogOut size={16} style={{ color: '#ff3d00' }} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => { setIsLoginModalOpen(true); setLoginRole('Customer'); }} className="btn btn-primary glow-btn" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <User size={18} /> Giriş Yap / Mağaza Aç
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Hero Section */}
@@ -865,7 +1086,6 @@ function App() {
             Girişimcilerin komisyonsuz, doğrudan satış linkleriyle satışa sunduğu yerel ürünleri inceleyin. Kapınıza kadar hızlı **Aras Kargo** güvencesiyle gelsin!
           </p>
 
-          {/* Search bar */}
           <div style={{ maxWidth: '500px', margin: '0 auto', position: 'relative' }}>
             <Search size={18} style={{ position: 'absolute', left: '16px', top: '15px', color: 'var(--text-muted)' }} />
             <input 
@@ -879,7 +1099,7 @@ function App() {
           </div>
         </section>
 
-        {/* Product Catalog marketplace Grid */}
+        {/* Product Catalog Grid */}
         <section style={{ flexGrow: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '22px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -916,16 +1136,24 @@ function App() {
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
                     <span className="product-price" style={{ color: 'var(--primary)' }}>{product.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
-                    <span style={{ fontSize: '11px', color: 'var(--color-delivered)', background: 'var(--color-delivered-bg)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Stokta Var</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Stokta: <b>{product.stock} Adet</b></span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                    <button 
+                      onClick={() => handleAddToCart(product.id)} 
+                      className="btn btn-secondary"
+                      style={{ padding: '10px', fontSize: '12px' }}
+                    >
+                      <ShoppingCart size={14} /> Sepete Ekle
+                    </button>
+                    
                     <button 
                       onClick={() => handleSimulatePublicLink(product.slug)} 
                       className="btn btn-primary glow-btn"
-                      style={{ width: '100%', padding: '10px' }}
+                      style={{ padding: '10px', fontSize: '12px' }}
                     >
-                      Detayları Gör / Satın Al <ArrowRight size={14} />
+                      Satın Al <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -934,12 +1162,129 @@ function App() {
           )}
         </section>
 
-        {/* Footer */}
+        {/* Dynamic Cart slide-out Drawer (MongoDB integration) */}
+        {isCartOpen && (
+          <div className="cart-drawer-overlay" onClick={() => { if (!isCheckoutStepOpen) setIsCartOpen(false); }}>
+            <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShoppingCart style={{ color: 'var(--primary)' }} /> Alışveriş Sepetim
+                </h3>
+                <button onClick={() => setIsCartOpen(false)} className="btn btn-secondary" style={{ padding: '6px 12px', minWidth: 'auto', borderRadius: '50%' }}>✕</button>
+              </div>
+
+              {/* Checkout Form or Item List */}
+              {isCheckoutStepOpen ? (
+                <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '16px' }}>Adres ve Ödeme Onayı</h4>
+                  
+                  <form onSubmit={handleCartCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Ad</label>
+                        <input type="text" className="form-input" value={checkoutForm.firstName} onChange={(e) => setCheckoutForm({...checkoutForm, firstName: e.target.value})} required />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Soyad</label>
+                        <input type="text" className="form-input" value={checkoutForm.lastName} onChange={(e) => setCheckoutForm({...checkoutForm, lastName: e.target.value})} required />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Telefon</label>
+                      <input type="text" className="form-input" value={checkoutForm.phoneNumber} onChange={(e) => setCheckoutForm({...checkoutForm, phoneNumber: e.target.value})} required />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-group">
+                        <label className="form-label">İl</label>
+                        <input type="text" className="form-input" value={checkoutForm.city} onChange={(e) => setCheckoutForm({...checkoutForm, city: e.target.value})} required />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">İlçe</label>
+                        <input type="text" className="form-input" value={checkoutForm.district} onChange={(e) => setCheckoutForm({...checkoutForm, district: e.target.value})} required />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Adres</label>
+                      <input type="text" className="form-input" value={checkoutForm.address} onChange={(e) => setCheckoutForm({...checkoutForm, address: e.target.value})} required />
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '8px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Kart Numarası</label>
+                        <input type="text" className="form-input" value={checkoutForm.cardNumber} onChange={(e) => setCheckoutForm({...checkoutForm, cardNumber: e.target.value})} required />
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <input type="text" className="form-input" placeholder="AA/YY" value={checkoutForm.cardExpiry} onChange={(e) => setCheckoutForm({...checkoutForm, cardExpiry: e.target.value})} required />
+                        <input type="text" className="form-input" placeholder="CVC" value={checkoutForm.cardCvc} onChange={(e) => setCheckoutForm({...checkoutForm, cardCvc: e.target.value})} required />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                      <button type="button" onClick={() => setIsCheckoutStepOpen(false)} className="btn btn-secondary" style={{ flexGrow: 1 }}>Geri Dön</button>
+                      <button type="submit" className="btn btn-primary glow-btn" style={{ flexGrow: 2 }}>Ödemeyi Yap ({getCartTotal().toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL)</button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <>
+                  <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {cart.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                        <ShoppingCart size={40} style={{ marginBottom: '12px', opacity: 0.3 }} />
+                        <p>Sepetiniz şu anda boş.</p>
+                      </div>
+                    ) : (
+                      cart.map((item, index) => {
+                        const prod = getProductById(item.productId);
+                        return (
+                          <div key={index} className="cart-item-card">
+                            <img src={prod.images && prod.images[0] ? prod.images[0] : ''} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} alt="" />
+                            <div style={{ flexGrow: 1, textAlign: 'left' }}>
+                              <h4 style={{ fontSize: '14px', fontWeight: 600 }}>{prod.title}</h4>
+                              <p style={{ color: 'var(--primary)', fontSize: '13px', fontWeight: 700, marginTop: '4px' }}>{(prod.price * item.quantity).toFixed(2)} TL</p>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <button onClick={() => handleUpdateCartQty(item.productId, item.quantity - 1)} className="cart-item-qty-btn">-</button>
+                              <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.quantity}</span>
+                              <button onClick={() => handleUpdateCartQty(item.productId, item.quantity + 1)} className="cart-item-qty-btn">+</button>
+                              <button onClick={() => handleRemoveFromCart(item.productId)} className="btn btn-secondary" style={{ padding: '6px', minWidth: 'auto', borderRadius: '50%', border: 'none' }} title="Sil">
+                                <Trash2 size={14} style={{ color: '#ff3d00' }} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {cart.length > 0 && (
+                    <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '16px', fontWeight: 700 }}>
+                        <span>Sepet Toplamı:</span>
+                        <span style={{ color: 'var(--primary)', fontSize: '20px' }}>{getCartTotal().toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
+                      </div>
+                      
+                      <button onClick={() => setIsCheckoutStepOpen(true)} className="btn btn-primary glow-btn" style={{ width: '100%', padding: '14px' }}>
+                        Alışverişi Tamamla / Ödemeye Geç
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <footer style={{ marginTop: '60px', padding: '40px 0 20px', textAlign: 'center', borderTop: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-muted)' }}>
           © 2026 Aras Pasajı - E-Ticaret ve Hızlı Lojistik Platformu. Aras Kargo entegrasyonu simüle edilmiştir.
         </footer>
 
-        {/* Floating Seller Login Modal */}
+        {/* Floating Dual-Role Login Modal */}
         {isLoginModalOpen && (
           <div className="modal-overlay">
             <div className="glass-card modal-content" style={{ padding: '40px', position: 'relative' }}>
@@ -951,17 +1296,31 @@ function App() {
                 ✕
               </button>
               
-              <div className="brand-section" style={{ justifyContent: 'center', marginBottom: '32px' }}>
+              <div className="brand-section" style={{ justifyContent: 'center', marginBottom: '24px' }}>
                 <div className="brand-logo-glow">
                   <LayoutDashboard size={24} style={{ color: '#fff' }} />
                 </div>
                 <div>
                   <h2 className="brand-name">ARAS İŞLETMEM</h2>
-                  <p className="brand-tagline">Satıcı Yönetim Paneli</p>
+                  <p className="brand-tagline">Rol Tabanlı Giriş Kapısı</p>
                 </div>
               </div>
-              
-              <h2 style={{ textAlign: 'center', marginBottom: '24px', fontSize: '22px' }}>Hoş Geldiniz</h2>
+
+              {/* Selector Tabs for Customer vs Seller */}
+              <div className="auth-tabs">
+                <div 
+                  className={`auth-tab ${loginRole === 'Customer' ? 'active' : ''}`}
+                  onClick={() => setLoginRole('Customer')}
+                >
+                  Müşteri Girişi (Sepet Uyumlu)
+                </div>
+                <div 
+                  className={`auth-tab ${loginRole === 'Seller' ? 'active' : ''}`}
+                  onClick={() => setLoginRole('Seller')}
+                >
+                  Satıcı Girişi (Yönetim Paneli)
+                </div>
+              </div>
               
               <form onSubmit={handleLogin}>
                 <div className="form-group">
@@ -974,7 +1333,6 @@ function App() {
                       style={{ paddingLeft: '48px' }} 
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="seller@arasisletmem.com"
                       required
                     />
                   </div>
@@ -990,7 +1348,6 @@ function App() {
                       style={{ paddingLeft: '48px' }} 
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••"
                       required
                     />
                   </div>
@@ -1002,8 +1359,10 @@ function App() {
               </form>
 
               <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary)' }}>TEST HESAP BİLGİLERİ:</span>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>E-Posta:</b> seller@arasisletmem.com</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary)' }}>TEST HESAP BİLGİLERİ ({loginRole === 'Customer' ? 'MÜŞTERİ' : 'SATICI'}):</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <b>E-Posta:</b> {loginRole === 'Customer' ? 'ali.yilmaz@example.com' : 'seller@arasisletmem.com'}
+                </span>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>Şifre:</b> 123456</span>
               </div>
             </div>
@@ -1024,7 +1383,7 @@ function App() {
   }
 
   // -------------------------------------------------------------
-  // VIEW 3: ADMIN SELLER DASHBOARD VIEW (AUTHENTICATED)
+  // VIEW 3: ADMIN SELLER DASHBOARD VIEW (AUTHENTICATED AS SELLER)
   // -------------------------------------------------------------
   return (
     <div className="app-container">
@@ -1462,44 +1821,22 @@ function App() {
                   Satın Alınacak Ürün
                 </h3>
 
-                {checkoutProduct ? (
+                {products.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div className="product-img-wrapper" style={{ paddingTop: '50%' }}>
-                      <img src={checkoutProduct.images && checkoutProduct.images[0] ? checkoutProduct.images[0] : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'} alt={checkoutProduct.title} className="product-img" />
+                      <img src={products[0].images && products[0].images[0] ? products[0].images[0] : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'} alt={products[0].title} className="product-img" />
                     </div>
                     <div>
-                      <h2 style={{ fontSize: '22px', fontWeight: 700 }}>{checkoutProduct.title}</h2>
-                      <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '6px' }}>{checkoutProduct.description}</p>
+                      <h2 style={{ fontSize: '22px', fontWeight: 700 }}>{products[0].title}</h2>
+                      <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '6px' }}>{products[0].description}</p>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
                       <span style={{ fontSize: '14px', fontWeight: 600 }}>Toplam Ödenecek:</span>
-                      <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{checkoutProduct.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
+                      <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{products[0].price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
                     </div>
-                    
-                    <button onClick={() => setCheckoutProduct(null)} className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontSize: '12px', padding: '8px 12px' }}>
-                      Başka Ürün Seç
-                    </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Lütfen listeden bir ürün seçin:</p>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {products.map(p => (
-                        <div 
-                          key={p.id} 
-                          className={`product-select-card ${checkoutProduct && checkoutProduct.id === p.id ? 'selected' : ''}`}
-                          onClick={() => setCheckoutProduct(p)}
-                        >
-                          <img src={p.images && p.images[0] ? p.images[0] : ''} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} alt="" />
-                          <div style={{ flexGrow: 1, textAlign: 'left' }}>
-                            <p style={{ fontWeight: 600, fontSize: '14px' }}>{p.title}</p>
-                            <p style={{ color: 'var(--primary)', fontSize: '13px', fontWeight: 700 }}>{p.price.toFixed(2)} TL</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <p style={{ color: 'var(--text-muted)' }}>Vitrinde henüz ürün yok.</p>
                 )}
               </div>
 
@@ -1512,131 +1849,39 @@ function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">Ad</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={checkoutForm.firstName} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, firstName: e.target.value})}
-                        required 
-                      />
+                      <input type="text" className="form-input" value={checkoutForm.firstName} onChange={(e) => setCheckoutForm({...checkoutForm, firstName: e.target.value})} required />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Soyad</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={checkoutForm.lastName} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, lastName: e.target.value})}
-                        required 
-                      />
+                      <input type="text" className="form-input" value={checkoutForm.lastName} onChange={(e) => setCheckoutForm({...checkoutForm, lastName: e.target.value})} required />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">E-Posta</label>
-                      <input 
-                        type="email" 
-                        className="form-input" 
-                        value={checkoutForm.email} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, email: e.target.value})}
-                        required 
-                      />
+                      <input type="email" className="form-input" value={checkoutForm.email} onChange={(e) => setCheckoutForm({...checkoutForm, email: e.target.value})} required />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Telefon</label>
-                      <div style={{ position: 'relative' }}>
-                        <Phone size={14} style={{ position: 'absolute', left: '12px', top: '15px', color: '#5e6475' }} />
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          style={{ paddingLeft: '36px' }}
-                          value={checkoutForm.phoneNumber} 
-                          onChange={(e) => setCheckoutForm({...checkoutForm, phoneNumber: e.target.value})}
-                          required 
-                        />
-                      </div>
+                      <input type="text" className="form-input" value={checkoutForm.phoneNumber} onChange={(e) => setCheckoutForm({...checkoutForm, phoneNumber: e.target.value})} required />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">İl</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={checkoutForm.city} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, city: e.target.value})}
-                        required 
-                      />
+                      <input type="text" className="form-input" value={checkoutForm.city} onChange={(e) => setCheckoutForm({...checkoutForm, city: e.target.value})} required />
                     </div>
                     <div className="form-group">
                       <label className="form-label">İlçe</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={checkoutForm.district} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, district: e.target.value})}
-                        required 
-                      />
+                      <input type="text" className="form-input" value={checkoutForm.district} onChange={(e) => setCheckoutForm({...checkoutForm, district: e.target.value})} required />
                     </div>
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">Tam Adres</label>
-                    <div style={{ position: 'relative' }}>
-                      <MapPin size={14} style={{ position: 'absolute', left: '12px', top: '15px', color: '#5e6475' }} />
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        style={{ paddingLeft: '36px' }}
-                        value={checkoutForm.address} 
-                        onChange={(e) => setCheckoutForm({...checkoutForm, address: e.target.value})}
-                        required 
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--border)', margin: '24px 0 16px', paddingTop: '16px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Kart Numarası</label>
-                      <div style={{ position: 'relative' }}>
-                        <CreditCard size={14} style={{ position: 'absolute', left: '12px', top: '15px', color: '#5e6475' }} />
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          style={{ paddingLeft: '36px' }}
-                          value={checkoutForm.cardNumber} 
-                          onChange={(e) => setCheckoutForm({...checkoutForm, cardNumber: e.target.value})}
-                          required 
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div className="form-group">
-                        <label className="form-label">Son Kullanma</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          placeholder="AA/YY" 
-                          value={checkoutForm.cardExpiry} 
-                          onChange={(e) => setCheckoutForm({...checkoutForm, cardExpiry: e.target.value})}
-                          required 
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">CVC</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          placeholder="123" 
-                          value={checkoutForm.cardCvc} 
-                          onChange={(e) => setCheckoutForm({...checkoutForm, cardCvc: e.target.value})}
-                          required 
-                        />
-                      </div>
-                    </div>
+                    <input type="text" className="form-input" value={checkoutForm.address} onChange={(e) => setCheckoutForm({...checkoutForm, address: e.target.value})} required />
                   </div>
 
                   <button type="submit" className="btn btn-primary glow-btn" style={{ width: '100%', padding: '14px', marginTop: '12px' }} disabled={loading}>
