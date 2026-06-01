@@ -122,6 +122,7 @@ builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddHostedService<CargoConsumerWorker>();
 
 var app = builder.Build();
 

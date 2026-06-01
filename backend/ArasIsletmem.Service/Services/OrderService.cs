@@ -40,7 +40,8 @@ public class OrderService : IOrderService
         await _orderRepository.AddAsync(order);
         await _unitOfWork.CommitAsync();
 
-        _rabbitMqPublisher.PublishOrderMessage(order.OrderNumber, "ARAS-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper());
+        // Kargo entegrasyonu için kuyruğa mesaj fırlat (Consumer takip no üretecek)
+        _rabbitMqPublisher.PublishOrderPlacedEvent(order.Id, order.OrderNumber);
 
         return order.OrderNumber;
     }
