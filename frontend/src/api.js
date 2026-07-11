@@ -130,4 +130,7 @@ export const getSellerDashboard = () =>
 export const getSellerWallet = () =>
   fetch(`${API_BASE}/api/seller/wallet`, { headers: getHeaders(true) }).then(handleResponse);
 
+export const getCategories = () =>
+  fetch(`${API_BASE}/api/categories`).then(handleResponse);
+
 export { API_BASE };

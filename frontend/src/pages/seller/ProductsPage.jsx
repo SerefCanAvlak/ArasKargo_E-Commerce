@@ -1,22 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Plus, Copy, ExternalLink, Trash2, X, Upload, CheckCircle2, Image as ImageIcon } from 'lucide-react';
-import { getSellerProducts, createProduct, deleteProduct, uploadProductImages } from '../../api';
+import { Plus, Copy, ExternalLink, Trash2, X, Upload, CheckCircle2 } from 'lucide-react';
+import { getSellerProducts, createProduct, deleteProduct, uploadProductImages, getCategories } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../components/ui/Toast';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const { addToast } = useToast();
 
-  const [form, setForm] = useState({ title: '', description: '', price: '', stock: '' });
+  const [form, setForm] = useState({ title: '', description: '', price: '', stock: '', categoryId: '' });
   const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, []);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -28,6 +32,16 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data || []);
+      if (data && data.length > 0) {
+        setForm(f => ({ ...f, categoryId: data[0].id }));
+      }
+    } catch {}
   };
 
   const handleFileChange = async (e) => {
@@ -46,7 +60,6 @@ export default function ProductsPage() {
       
       setUploadedImages(prev => {
         const updated = [...prev, ...newUrls];
-        // Default cover image to the first uploaded one if not already set
         if (!coverImage && updated.length > 0) {
           setCoverImage(updated[0]);
         }
@@ -97,6 +110,10 @@ export default function ProductsPage() {
       addToast('Lütfen en az bir ürün görseli yükleyin.', 'error');
       return;
     }
+    if (!form.categoryId) {
+      addToast('Lütfen bir kategori seçin.', 'error');
+      return;
+    }
     
     try {
       await createProduct({
@@ -105,12 +122,13 @@ export default function ProductsPage() {
         price: parsedPrice,
         stock: parsedStock,
         images: uploadedImages,
-        coverImage: coverImage || uploadedImages[0]
+        coverImage: coverImage || uploadedImages[0],
+        categoryId: form.categoryId
       });
       
       addToast('Ürün başarıyla eklendi!');
       setModalOpen(false);
-      setForm({ title: '', description: '', price: '', stock: '' });
+      setForm({ title: '', description: '', price: '', stock: '', categoryId: categories[0]?.id || '' });
       setUploadedImages([]);
       setCoverImage('');
       loadProducts();
@@ -134,6 +152,11 @@ export default function ProductsPage() {
     const link = `${window.location.origin}/products/${slug}`;
     navigator.clipboard.writeText(link);
     addToast('Link kopyalandı! 📋');
+  };
+
+  const getCategoryName = (catId) => {
+    const cat = categories.find(c => c.id === catId);
+    return cat ? cat.name : 'Genel';
   };
 
   return (
@@ -185,8 +208,9 @@ export default function ProductsPage() {
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Stok: {product.stock}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg)', padding: '4px 8px', borderRadius: 4, marginBottom: 12 }}>
-                      Slug: {product.slug}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', padding: '6px 8px', borderRadius: 4, marginBottom: 12, fontSize: 11, color: 'var(--text-secondary)' }}>
+                      <span>Kat: {getCategoryName(product.categoryId)}</span>
+                      <span>Slug: {product.slug}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => copyLink(product.slug)}>
@@ -225,6 +249,22 @@ export default function ProductsPage() {
                   <label className="form-label">Açıklama</label>
                   <textarea className="form-textarea" value={form.description} onChange={e => setForm({...form, description: e.target.value})} required />
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Kategori</label>
+                  <select 
+                    className="form-select" 
+                    value={form.categoryId} 
+                    onChange={e => setForm({...form, categoryId: e.target.value})} 
+                    required
+                  >
+                    <option value="" disabled>Kategori Seçin</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="form-group">
                     <label className="form-label">Fiyat (TL)</label>
@@ -263,7 +303,7 @@ export default function ProductsPage() {
                       }}
                     />
                     <Upload size={24} style={{ color: 'var(--text-secondary)', marginBottom: 8 }} />
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>Görsel Seçmek İçin Tıklayın</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>Görsel Seçlemek İçin Tıklayın</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Birden fazla dosya seçebilirsiniz (JPG, PNG, WEBP)</div>
                   </div>
 
@@ -333,7 +373,7 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+                <div style={{ display: 'flex', gap: 12, justify: 'flex-end', marginTop: 16 }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>İptal</button>
                   <button type="submit" className="btn btn-primary" disabled={uploading}>Ürünü Kaydet</button>
                 </div>

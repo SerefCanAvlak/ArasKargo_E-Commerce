@@ -10,7 +10,7 @@ import ProductCard from '../components/ui/ProductCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useToast } from '../components/ui/Toast';
 
-export default function HomePage({ searchQuery, onAddToCart }) {
+export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ export default function HomePage({ searchQuery, onAddToCart }) {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await getProducts(1, 20);
+      const data = await getProducts(1, 10); // limit to 10 products
       setProducts(data.items || data || []);
     } catch {
       setProducts([]);
@@ -43,7 +43,8 @@ export default function HomePage({ searchQuery, onAddToCart }) {
   const filtered = searchQuery
     ? products.filter(p =>
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.categoryName?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : products;
 

@@ -199,6 +199,33 @@ using (var scope = app.Services.CreateScope())
         });
     }
     dbContext.SaveChanges();
+
+    // MongoDB Category Seeding
+    var categoryRepo = scope.ServiceProvider.GetRequiredService<IMongoRepository<ArasIsletmem.Core.Entities.Category>>();
+    var allCategories = categoryRepo.GetAllAsync().GetAwaiter().GetResult();
+    if (allCategories == null || !System.Linq.Enumerable.Any(allCategories))
+    {
+        var seedCategories = new List<string> { "Kadın", "Erkek", "Ev & Yaşam", "Kozmetik", "Elektronik", "Spor & Outdoor", "Hobi & Oyuncak", "Kitap & Kırtasiye", "Fırsatlar" };
+        foreach (var catName in seedCategories)
+        {
+            var slug = catName.ToLowerInvariant()
+                .Replace("ş", "s")
+                .Replace("ç", "c")
+                .Replace("ö", "o")
+                .Replace("ğ", "g")
+                .Replace("ü", "u")
+                .Replace("ı", "i")
+                .Replace(" ", "-")
+                .Replace("&", "ve");
+            categoryRepo.AddAsync(new ArasIsletmem.Core.Entities.Category
+            {
+                Name = catName,
+                Slug = slug,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            }).GetAwaiter().GetResult();
+        }
+    }
 }
 
 app.Run();

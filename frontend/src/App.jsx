@@ -144,7 +144,7 @@ function App() {
       />
 
       <Routes>
-        <Route path="/" element={<HomePage searchQuery={searchQuery} onAddToCart={handleAddToCart} />} />
+        <Route path="/" element={<HomePage searchQuery={searchQuery} onSearchChange={setSearchQuery} onAddToCart={handleAddToCart} />} />
         <Route path="/products/:slug" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
         <Route path="/checkout" element={
           <CheckoutPage cart={cart} products={products} onClearCart={handleClearCart} />
