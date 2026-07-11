@@ -13,15 +13,18 @@ public class ProductService : IProductService
     private readonly IMongoRepository<Product> _productRepository;
     private readonly IMongoRepository<Category> _categoryRepository;
     private readonly IMongoRepository<Brand> _brandRepository;
+    private readonly IRepository<Seller> _sellerRepository;
 
     public ProductService(
         IMongoRepository<Product> productRepository,
         IMongoRepository<Category> categoryRepository,
-        IMongoRepository<Brand> brandRepository)
+        IMongoRepository<Brand> brandRepository,
+        IRepository<Seller> sellerRepository)
     {
         _productRepository = productRepository;
         _categoryRepository = categoryRepository;
         _brandRepository = brandRepository;
+        _sellerRepository = sellerRepository;
     }
 
     public async Task<string> CreateProductAsync(string sellerId, ProductDto productDto)
@@ -61,9 +64,20 @@ public class ProductService : IProductService
         cleanTitle = cleanTitle.Replace(" ", "-");
         var slug = cleanTitle + "-" + new Random().Next(100, 999);
 
+        string sellerName = "Lina Atölye";
+        if (Guid.TryParse(sellerId, out var sellerGuid))
+        {
+            var seller = await _sellerRepository.GetByIdAsync(sellerGuid);
+            if (seller != null && !string.IsNullOrEmpty(seller.CompanyName))
+            {
+                sellerName = seller.CompanyName;
+            }
+        }
+
         var product = new Product
         {
             SellerId = sellerId,
+            SellerName = sellerName,
             Title = productDto.Title,
             Description = productDto.Description,
             Price = productDto.Price,

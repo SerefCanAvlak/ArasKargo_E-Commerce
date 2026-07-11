@@ -124,7 +124,7 @@ export default function ProductDetailPage({ onAddToCart }) {
             <h1 className="product-v2-title">{product.title}</h1>
             
             <div className="product-v2-seller-row">
-              <span className="seller-name-link">Lina Atölye</span>
+              <span className="seller-name-link">{product.sellerName || 'Lina Atölye'}</span>
               <span className="store-rating-badge">9.2</span>
               <span className="review-count">(132 değerlendirme)</span>
             </div>
@@ -224,10 +224,12 @@ export default function ProductDetailPage({ onAddToCart }) {
           {/* Right Column: Seller info card */}
           <div className="product-seller-sidebar-card">
             <div className="seller-profile-row">
-              <div className="seller-avatar-circle">LA</div>
+              <div className="seller-avatar-circle">
+                {product.sellerName ? (product.sellerName.split(' ').length >= 2 ? (product.sellerName.split(' ')[0][0] + product.sellerName.split(' ')[1][0]).toUpperCase() : product.sellerName.slice(0, 2).toUpperCase()) : 'LA'}
+              </div>
               <div className="seller-info-details">
                 <span className="seller-title-label">Mağaza</span>
-                <h4>Lina Atölye</h4>
+                <h4>{product.sellerName || 'Lina Atölye'}</h4>
                 <span className="rating-mini-badge">9.2</span>
               </div>
             </div>
