@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ArasIsletmem.Core.DTOs;
 using ArasIsletmem.Core.Entities;
@@ -98,28 +99,38 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<Product>> GetAllProductsAsync()
     {
-        return await _productRepository.GetAllAsync();
+        var products = await _productRepository.GetAllAsync();
+        await PopulateSellerNamesAsync(products);
+        return products;
     }
 
     public async Task<(IEnumerable<Product> Items, long TotalCount)> GetPagedProductsAsync(int page, int pageSize)
     {
-        return await _productRepository.GetPagedAsync(page, pageSize);
+        var res = await _productRepository.GetPagedAsync(page, pageSize);
+        await PopulateSellerNamesAsync(res.Items);
+        return res;
     }
 
     public async Task<(IEnumerable<Product> Items, long TotalCount)> GetProductsBySellerPagedAsync(string sellerId, int page, int pageSize)
     {
-        return await _productRepository.GetPagedAsync(page, pageSize, x => x.SellerId == sellerId);
+        var res = await _productRepository.GetPagedAsync(page, pageSize, x => x.SellerId == sellerId);
+        await PopulateSellerNamesAsync(res.Items);
+        return res;
     }
 
     public async Task<Product?> GetProductByIdAsync(string id)
     {
-        return await _productRepository.GetByIdAsync(id);
+        var product = await _productRepository.GetByIdAsync(id);
+        await PopulateSellerNameAsync(product);
+        return product;
     }
 
     public async Task<Product?> GetProductBySlugAsync(string slug)
     {
         var products = await _productRepository.FindAsync(p => p.Slug == slug && p.IsActive);
-        return products.FirstOrDefault();
+        var product = products.FirstOrDefault();
+        await PopulateSellerNameAsync(product);
+        return product;
     }
 
     public async Task UpdateProductAsync(string id, ProductDto productDto)
@@ -167,5 +178,34 @@ public class ProductService : IProductService
     public async Task DeleteProductAsync(string id)
     {
         await _productRepository.RemoveAsync(id);
+    }
+
+    private async Task PopulateSellerNameAsync(Product? product)
+    {
+        if (product == null) return;
+        
+        string sellerId = product.SellerId;
+        if (sellerId == "seller@arasisletmem.com")
+        {
+            sellerId = "d3b07384-d113-4956-a55e-214545645645";
+        }
+
+        if (Guid.TryParse(sellerId, out var sellerGuid))
+        {
+            var seller = await _sellerRepository.GetByIdAsync(sellerGuid);
+            if (seller != null && !string.IsNullOrEmpty(seller.CompanyName))
+            {
+                product.SellerName = seller.CompanyName;
+            }
+        }
+    }
+
+    private async Task PopulateSellerNamesAsync(IEnumerable<Product>? products)
+    {
+        if (products == null) return;
+        foreach (var product in products)
+        {
+            await PopulateSellerNameAsync(product);
+        }
     }
 }
