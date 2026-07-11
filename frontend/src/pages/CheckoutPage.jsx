@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, CreditCard, MapPin, Truck } from 'lucide-react';
 import { createOrder, clearBasket } from '../api';
@@ -14,6 +14,13 @@ export default function CheckoutPage({ cart, products, onClearCart }) {
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated || !isCustomer) {
+      addToast('Ödeme sayfasına erişmek için üye girişi yapmalısınız.', 'warning');
+      navigate('/login');
+    }
+  }, [isAuthenticated, isCustomer, navigate, addToast]);
 
   const [form, setForm] = useState({
     firstName: '', lastName: '',

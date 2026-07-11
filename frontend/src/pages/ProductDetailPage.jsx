@@ -61,9 +61,11 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   const mainImageToShow = activeImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
 
-  const handleBuyNow = () => {
-    onAddToCart(product.id);
-    navigate('/checkout');
+  const handleBuyNow = async () => {
+    const success = await onAddToCart(product.id);
+    if (success) {
+      navigate('/checkout');
+    }
   };
 
   return (

@@ -226,6 +226,63 @@ using (var scope = app.Services.CreateScope())
             }).GetAwaiter().GetResult();
         }
     }
+
+    // MongoDB Product Seeding
+    var productRepo = scope.ServiceProvider.GetRequiredService<IMongoRepository<ArasIsletmem.Core.Entities.Product>>();
+    var allProducts = productRepo.GetAllAsync().GetAwaiter().GetResult();
+    if (allProducts == null || !System.Linq.Enumerable.Any(allProducts))
+    {
+        var categoryList = categoryRepo.GetAllAsync().GetAwaiter().GetResult();
+        
+        var seedProducts = new List<dynamic>
+        {
+            new { Title = "El Yapımı Seramik Kupa", Category = "Ev & Yaşam", Price = 249.90m, Stock = 132, Image = "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600", Desc = "Tuğçe'nin El Ürünleri tasarımı. Özel killi seramik çamurundan üretilmiş, gıdaya uygun el yapımı seramik kupa." },
+            new { Title = "Doğal Soya Mum - Lavanta Kokulu", Category = "Ev & Yaşam", Price = 129.90m, Stock = 74, Image = "https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600", Desc = "Soya fasulyesi yağından üretilmiş, el yapımı %100 doğal soya mumu. Lavanta ve vanilya esanslı dinlendirici terapi mumu." },
+            new { Title = "Minimalist Beton Saksı & Sukulent", Category = "Ev & Yaşam", Price = 199.90m, Stock = 45, Image = "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600", Desc = "Naturel beton saksı içerisinde canlı ve sağlıklı sukulent bitkisi ile birlikte teslim edilir." },
+            new { Title = "Kablosuz Gürültü Engelleyici Kulaklık", Category = "Elektronik", Price = 1899.90m, Stock = 25, Image = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600", Desc = "Aktif gürültü engelleme (ANC) özellikli, 40 saate kadar çalma süresi sunan konforlu Bluetooth kulaklık." },
+            new { Title = "Erkek Pamuklu Oversize T-Shirt", Category = "Erkek", Price = 349.90m, Stock = 85, Image = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600", Desc = "%100 organik pamuk ipliğinden üretilmiş, rahat kalıp günlük kullanıma uygun siyah oversize t-shirt." },
+            new { Title = "Kadın Deri Omuz Çantası", Category = "Kadın", Price = 899.90m, Stock = 15, Image = "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600", Desc = "Birinci sınıf hakiki deriden el işçiliğiyle üretilmiş şık ve kullanışlı kadın omuz çantası." },
+            new { Title = "Doğal Yüz Temizleme Yağı ve Serumu", Category = "Kozmetik", Price = 299.90m, Stock = 50, Image = "https://images.unsplash.com/photo-1608248597481-496100c80836?w=600", Desc = "Cildi kurutmadan temizleyen, sebum dengesini düzenleyen %100 soğuk sıkım bitkisel temizleme serumu." },
+            new { Title = "Deri Kapaklı Çizgili Defter", Category = "Kitap & Kırtasiye", Price = 159.90m, Stock = 110, Image = "https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=600", Desc = "Retro tarzı el yapımı dikişli, kaliteli kalın kraft kağıtlı deri kapaklı çizgili günlük defteri." },
+            new { Title = "Taşınabilir Yoga Matı (6mm)", Category = "Spor & Outdoor", Price = 449.90m, Stock = 30, Image = "https://images.unsplash.com/photo-1592432678016-e910b452f9a2?w=600", Desc = "Kaymaz TPE malzemeden üretilmiş, taşıma askısı dahil 6mm kalınlığında profesyonel yoga ve pilates matı." },
+            new { Title = "Ahşap Eğitici Çocuk Yapbozu", Category = "Hobi & Oyuncak", Price = 189.90m, Stock = 60, Image = "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600", Desc = "Kayın ağacından el yapımı, toksik olmayan su bazlı boyalarla renklendirilmiş eğitici hayvan yapboz seti." }
+        };
+
+        var random = new Random();
+        foreach (var p in seedProducts)
+        {
+            var matchedCat = System.Linq.Enumerable.FirstOrDefault(categoryList, c => c.Name == (string)p.Category);
+            
+            var title = (string)p.Title;
+            var cleanTitle = title.ToLowerInvariant()
+                .Replace("ş", "s")
+                .Replace("ç", "c")
+                .Replace("ö", "o")
+                .Replace("ğ", "g")
+                .Replace("ü", "u")
+                .Replace("ı", "i");
+            cleanTitle = System.Text.RegularExpressions.Regex.Replace(cleanTitle, @"[^a-z0-9\s-]", "");
+            cleanTitle = System.Text.RegularExpressions.Regex.Replace(cleanTitle, @"\s+", " ").Trim();
+            var slug = $"{cleanTitle.Replace(" ", "-")}-{random.Next(100, 999)}";
+
+            var prod = new ArasIsletmem.Core.Entities.Product
+            {
+                Title = title,
+                Description = (string)p.Desc,
+                Price = (decimal)p.Price,
+                Stock = (int)p.Stock,
+                Images = new List<string> { (string)p.Image },
+                CoverImage = (string)p.Image,
+                CategoryId = matchedCat?.Id ?? string.Empty,
+                CategoryName = matchedCat?.Name ?? "Genel",
+                Slug = slug,
+                SellerId = "seller@arasisletmem.com",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            productRepo.AddAsync(prod).GetAwaiter().GetResult();
+        }
+    }
 }
 
 app.Run();

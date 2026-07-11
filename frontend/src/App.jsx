@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './components/ui/Toast';
 import { getBasket, addToBasket, updateBasketItem, removeBasketItem, getProducts } from './api';
@@ -24,6 +24,7 @@ function App() {
   const { isAuthenticated, isCustomer } = useAuth();
   const { addToast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Scroll to top on route change
   useEffect(() => {
@@ -63,14 +64,9 @@ function App() {
 
   const handleAddToCart = useCallback(async (productId) => {
     if (!isAuthenticated || !isCustomer) {
-      // Add to local cart for guests
-      setCart(prev => {
-        const existing = prev.find(i => i.productId === productId);
-        if (existing) return prev.map(i => i.productId === productId ? { ...i, quantity: i.quantity + 1 } : i);
-        return [...prev, { productId, quantity: 1 }];
-      });
-      addToast('Ürün sepete eklendi! 🛒');
-      return;
+      addToast('Alışveriş yapabilmek için üye girişi yapmalısınız.', 'warning');
+      navigate('/login');
+      return false;
     }
 
     try {
