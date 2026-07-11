@@ -124,7 +124,13 @@ export default function ProductDetailPage({ onAddToCart }) {
             <h1 className="product-v2-title">{product.title}</h1>
             
             <div className="product-v2-seller-row">
-              <span className="seller-name-link">{product.sellerName || 'Mağaza'}</span>
+              <span 
+                className="seller-name-link" 
+                onClick={() => navigate(`/store/${product.sellerId}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                {product.sellerName || 'Mağaza'}
+              </span>
               <span className="store-rating-badge">9.2</span>
               <span className="review-count">(132 değerlendirme)</span>
             </div>
@@ -234,7 +240,11 @@ export default function ProductDetailPage({ onAddToCart }) {
               </div>
             </div>
 
-            <button className="btn btn-secondary btn-full" style={{ margin: '16px 0' }}>
+            <button 
+              className="btn btn-secondary btn-full" 
+              style={{ margin: '16px 0' }}
+              onClick={() => navigate(`/store/${product.sellerId}`)}
+            >
               Mağazaya Git <ChevronRight size={14} />
             </button>
 
