@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Headset } from 'lucide-react';
+import logoImg from '../../assets/Aras_Isletmem_Logo.png';
 
 export default function Footer() {
   return (
@@ -9,14 +10,8 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="footer-v2-brand">
             <div className="footer-v2-logo">
-              <div className="navbar-brand-icon" style={{ width: 32, height: 32 }}>
-                <svg viewBox="0 0 100 100" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 15L70 50L20 85L35 50L20 15Z" fill="#ffffff" />
-                  <path d="M50 15L90 50L50 85L65 50L50 15Z" fill="rgba(255,255,255,0.6)" />
-                </svg>
-              </div>
-              <div className="footer-v2-logo-text">
-                <h3>aras işletmem</h3>
+              <div className="navbar-brand-icon" style={{ display: 'flex', alignItems: 'center', height: '40px', width: 'auto' }}>
+                <img src={logoImg} alt="Aras İşletmem" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
               </div>
             </div>
             <p className="footer-v2-brand-desc">

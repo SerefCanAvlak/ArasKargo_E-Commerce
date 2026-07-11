@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu, Truck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getCategories } from '../../api';
+import logoImg from '../../assets/Aras_Isletmem_Logo.png';
 
 export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearchChange }) {
   const { isAuthenticated, isSeller, isCustomer, userEmail, logout } = useAuth();
@@ -35,7 +36,7 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
     try {
       const data = await getCategories();
       setCategories(data || []);
-    } catch {}
+    } catch { }
   };
 
   const handleLogout = () => {
@@ -69,25 +70,17 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
       <div className="navbar-top">
         <div className="navbar-inner-top">
           {/* Logo & Tagline */}
-          <div onClick={handleLogoClick} className="navbar-brand" style={{ cursor: 'pointer' }}>
-            <div className="navbar-brand-icon">
-              {/* Aras style red chevron logo */}
-              <svg viewBox="0 0 100 100" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 15L70 50L20 85L35 50L20 15Z" fill="#ffffff" />
-                <path d="M50 15L90 50L50 85L65 50L50 15Z" fill="rgba(255,255,255,0.6)" />
-              </svg>
-            </div>
-            <div className="navbar-brand-text">
-              <h1>aras işletmem</h1>
-              <span>Girişimcinin Yanında.</span>
+          <div onClick={handleLogoClick} className="navbar-brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="navbar-brand-icon" style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
+              <img src={logoImg} alt="Aras İşletmem" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
             </div>
           </div>
 
           {/* Search with Category Select Dropdown */}
           <form onSubmit={handleSearchSubmit} className="navbar-search-container" style={{ position: 'relative' }} ref={dropdownRef}>
-            <div 
-              className="navbar-search-dropdown" 
-              onClick={() => setShowDropdown(!showDropdown)} 
+            <div
+              className="navbar-search-dropdown"
+              onClick={() => setShowDropdown(!showDropdown)}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
             >
               <span>{selectedCategory.name}</span>
@@ -95,7 +88,7 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
             </div>
 
             {showDropdown && (
-              <div 
+              <div
                 className="dropdown-menu-list"
                 style={{
                   position: 'absolute',
@@ -113,7 +106,7 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
                   overflowY: 'auto'
                 }}
               >
-                <div 
+                <div
                   onClick={() => {
                     setSelectedCategory({ id: '', name: 'Tüm Kategoriler' });
                     setShowDropdown(false);
@@ -134,7 +127,7 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
                 {categories.map(cat => {
                   const isActive = selectedCategory.id === cat.id;
                   return (
-                    <div 
+                    <div
                       key={cat.id}
                       onClick={() => {
                         setSelectedCategory(cat);
@@ -175,9 +168,9 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
           <div className="navbar-actions">
             {isAuthenticated ? (
               <div className="profile-dropdown-container" ref={profileDropdownRef}>
-                <div 
-                  className="navbar-action-item user-active" 
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
+                <div
+                  className="navbar-action-item user-active"
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   <User size={20} />
