@@ -16,6 +16,16 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
     navigate('/');
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    navigate(`/products?q=${encodeURIComponent(searchQuery || '')}`);
+  };
+
+  const handleCategoryClick = (catName) => {
+    onSearchChange?.(catName);
+    navigate(`/products?category=${encodeURIComponent(catName)}`);
+  };
+
   return (
     <nav className="navbar">
       {/* Top Header Row */}
@@ -37,8 +47,8 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
           </div>
 
           {/* Search with Category Select Dropdown */}
-          <div className="navbar-search-container">
-            <div className="navbar-search-dropdown">
+          <form onSubmit={handleSearchSubmit} className="navbar-search-container">
+            <div className="navbar-search-dropdown" onClick={() => navigate('/products')} style={{ cursor: 'pointer' }}>
               <span>Tüm Kategoriler</span>
               <ChevronDown size={14} />
             </div>
@@ -49,11 +59,11 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
                 value={searchQuery || ''}
                 onChange={(e) => onSearchChange?.(e.target.value)}
               />
-              <button className="navbar-search-btn" title="Ara">
+              <button type="submit" className="navbar-search-btn" title="Ara">
                 <Search size={18} />
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Action Items */}
           <div className="navbar-actions">
@@ -103,20 +113,20 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
       {/* Bottom Header Row (Sub-Navbar Categories) */}
       <div className="navbar-bottom-row">
         <div className="navbar-inner-bottom">
-          <div className="category-menu-trigger">
+          <div className="category-menu-trigger" onClick={() => navigate('/products')} style={{ cursor: 'pointer' }}>
             <Menu size={16} />
             <span>Tüm Kategoriler</span>
           </div>
           <div className="sub-navbar-links">
-            <span onClick={() => { onSearchChange?.('Kadın'); navigate('/'); }} className="sub-nav-link">Kadın</span>
-            <span onClick={() => { onSearchChange?.('Erkek'); navigate('/'); }} className="sub-nav-link">Erkek</span>
-            <span onClick={() => { onSearchChange?.('Ev & Yaşam'); navigate('/'); }} className="sub-nav-link">Ev & Yaşam</span>
-            <span onClick={() => { onSearchChange?.('Kozmetik'); navigate('/'); }} className="sub-nav-link">Kozmetik</span>
-            <span onClick={() => { onSearchChange?.('Elektronik'); navigate('/'); }} className="sub-nav-link">Elektronik</span>
-            <span onClick={() => { onSearchChange?.('Spor'); navigate('/'); }} className="sub-nav-link">Spor & Outdoor</span>
-            <span onClick={() => { onSearchChange?.('Hobi'); navigate('/'); }} className="sub-nav-link">Hobi & Oyuncak</span>
-            <span onClick={() => { onSearchChange?.('Kitap'); navigate('/'); }} className="sub-nav-link">Kitap & Kırtasiye</span>
-            <span onClick={() => { onSearchChange?.('Fırsat'); navigate('/'); }} className="sub-nav-link highlight-link">Fırsatlar</span>
+            <span onClick={() => handleCategoryClick('Kadın')} className="sub-nav-link">Kadın</span>
+            <span onClick={() => handleCategoryClick('Erkek')} className="sub-nav-link">Erkek</span>
+            <span onClick={() => handleCategoryClick('Ev & Yaşam')} className="sub-nav-link">Ev & Yaşam</span>
+            <span onClick={() => handleCategoryClick('Kozmetik')} className="sub-nav-link">Kozmetik</span>
+            <span onClick={() => handleCategoryClick('Elektronik')} className="sub-nav-link">Elektronik</span>
+            <span onClick={() => handleCategoryClick('Spor & Outdoor')} className="sub-nav-link">Spor & Outdoor</span>
+            <span onClick={() => handleCategoryClick('Hobi & Oyuncak')} className="sub-nav-link">Hobi & Oyuncak</span>
+            <span onClick={() => handleCategoryClick('Kitap & Kırtasiye')} className="sub-nav-link">Kitap & Kırtasiye</span>
+            <span onClick={() => handleCategoryClick('Fırsatlar')} className="sub-nav-link highlight-link">Fırsatlar</span>
           </div>
         </div>
       </div>

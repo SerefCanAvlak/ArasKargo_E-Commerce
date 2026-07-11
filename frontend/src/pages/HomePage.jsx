@@ -168,7 +168,7 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
                 className="category-circle-card"
                 onClick={() => {
                   onSearchChange?.(cat.query);
-                  document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+                  navigate(`/products?category=${encodeURIComponent(cat.query)}`);
                 }}
               >
                 <div className="category-circle-icon">{cat.icon}</div>

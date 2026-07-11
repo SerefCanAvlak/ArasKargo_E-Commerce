@@ -13,6 +13,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ProductsSearchPage from './pages/ProductsSearchPage';
 
 import DashboardPage from './pages/seller/DashboardPage';
 import ProductsPage from './pages/seller/ProductsPage';
@@ -145,6 +146,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<HomePage searchQuery={searchQuery} onSearchChange={setSearchQuery} onAddToCart={handleAddToCart} />} />
+        <Route path="/products" element={<ProductsSearchPage onAddToCart={handleAddToCart} />} />
         <Route path="/products/:slug" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
         <Route path="/checkout" element={
           <CheckoutPage cart={cart} products={products} onClearCart={handleClearCart} />
