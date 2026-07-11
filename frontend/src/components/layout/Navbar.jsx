@@ -10,8 +10,10 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
 
   const [categories, setCategories] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState({ id: '', name: 'Tüm Kategoriler' });
   const dropdownRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   useEffect(() => {
     loadCategories();
@@ -20,6 +22,9 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -169,34 +174,46 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
           {/* Action Items */}
           <div className="navbar-actions">
             {isAuthenticated ? (
-              <>
-                {isSeller ? (
-                  <Link to="/seller/dashboard" className="navbar-action-item user-active">
-                    <User size={20} />
-                    <span>Satıcı Paneli</span>
-                  </Link>
-                ) : (
-                  <div className="navbar-action-item user-active">
-                    <User size={20} />
-                    <span className="user-email-text">{userEmail.split('@')[0]}</span>
+              <div className="profile-dropdown-container" ref={profileDropdownRef}>
+                <div 
+                  className="navbar-action-item user-active" 
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <User size={20} />
+                  <span>{userEmail ? userEmail.split('@')[0] : 'Hesabım'}</span>
+                  <ChevronDown size={14} />
+                </div>
+
+                {showProfileDropdown && (
+                  <div className="profile-dropdown-menu">
+                    <div className="profile-dropdown-header">
+                      Giriş Yapılan Hesap
+                      <div className="profile-dropdown-email">{userEmail}</div>
+                    </div>
+                    {isSeller && (
+                      <Link to="/seller/dashboard" className="profile-dropdown-item" onClick={() => setShowProfileDropdown(false)}>
+                        <User size={16} />
+                        <span>Satıcı Paneli</span>
+                      </Link>
+                    )}
+                    <Link to="/tracking" className="profile-dropdown-item" onClick={() => setShowProfileDropdown(false)}>
+                      <Truck size={16} />
+                      <span>Kargom Nerede</span>
+                    </Link>
+                    <button className="profile-dropdown-item" onClick={() => { handleLogout(); setShowProfileDropdown(false); }}>
+                      <LogOut size={16} style={{ color: 'var(--danger)' }} />
+                      <span style={{ color: 'var(--danger)' }}>Çıkış Yap</span>
+                    </button>
                   </div>
                 )}
-                <button className="navbar-action-item btn-logout-nav" onClick={handleLogout} title="Çıkış Yap">
-                  <LogOut size={20} style={{ color: 'var(--primary)' }} />
-                  <span>Çıkış</span>
-                </button>
-              </>
+              </div>
             ) : (
               <Link to="/login" className="navbar-action-item">
                 <User size={20} />
                 <span>Giriş Yap</span>
               </Link>
             )}
-
-            <Link to="/tracking" className="navbar-action-item">
-              <Truck size={20} style={{ color: 'var(--success)' }} />
-              <span>Kargom Nerede</span>
-            </Link>
 
             <Link to="/" className="navbar-action-item">
               <Heart size={20} />
