@@ -156,13 +156,18 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var mockSellerId = Guid.Parse("d3b07384-d113-4956-a55e-214545645645");
-    if (!dbContext.Sellers.Any(s => s.Id == mockSellerId))
+    var existingSeller = dbContext.Sellers.FirstOrDefault(s => s.Id == mockSellerId);
+    if (existingSeller != null)
+    {
+        existingSeller.CompanyName = "Lina Atölye";
+    }
+    else
     {
         using var hmac = new System.Security.Cryptography.HMACSHA512();
         var seller = new ArasIsletmem.Core.Entities.Seller
         {
             Id = mockSellerId,
-            CompanyName = "Test Satıcısı",
+            CompanyName = "Lina Atölye",
             TaxNumber = "1112223334",
             PhoneNumber = "05554443322",
             IBAN = "TR123456789",
@@ -229,6 +234,20 @@ using (var scope = app.Services.CreateScope())
 
     // MongoDB Product Seeding
     var productRepo = scope.ServiceProvider.GetRequiredService<IMongoRepository<ArasIsletmem.Core.Entities.Product>>();
+    
+    // Clean up old invalid seed products with email as SellerId
+    var oldProducts = productRepo.GetAllAsync().GetAwaiter().GetResult();
+    if (oldProducts != null)
+    {
+        foreach (var oldP in oldProducts)
+        {
+            if (oldP.SellerId == "seller@arasisletmem.com")
+            {
+                productRepo.RemoveAsync(oldP.Id).GetAwaiter().GetResult();
+            }
+        }
+    }
+
     var allProducts = productRepo.GetAllAsync().GetAwaiter().GetResult();
     if (allProducts == null || !System.Linq.Enumerable.Any(allProducts, p => p.Title == "El Yapımı Seramik Kupa"))
     {
@@ -276,7 +295,8 @@ using (var scope = app.Services.CreateScope())
                 CategoryId = matchedCat?.Id ?? string.Empty,
                 CategoryName = matchedCat?.Name ?? "Genel",
                 Slug = slug,
-                SellerId = "seller@arasisletmem.com",
+                SellerId = "d3b07384-d113-4956-a55e-214545645645",
+                SellerName = "Lina Atölye",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
