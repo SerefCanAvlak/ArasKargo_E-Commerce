@@ -10,9 +10,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="footer-v2-brand">
             <div className="footer-v2-logo">
-              <div className="navbar-brand-icon" style={{ display: 'flex', alignItems: 'center', height: '40px', width: 'auto' }}>
-                <img src={logoImg} alt="Aras İşletmem" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
-              </div>
+              <img src={logoImg} alt="Aras İşletmem" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
             </div>
             <p className="footer-v2-brand-desc">
               Girişimcinin yanında, işletmelerin daima desteğindeyiz.

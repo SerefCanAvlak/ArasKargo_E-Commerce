@@ -70,10 +70,8 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
       <div className="navbar-top">
         <div className="navbar-inner-top">
           {/* Logo & Tagline */}
-          <div onClick={handleLogoClick} className="navbar-brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="navbar-brand-icon" style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
-              <img src={logoImg} alt="Aras İşletmem" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
-            </div>
+          <div onClick={handleLogoClick} className="navbar-brand" style={{ cursor: 'pointer' }}>
+            <img src={logoImg} alt="Aras İşletmem" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
           </div>
 
           {/* Search with Category Select Dropdown */}
