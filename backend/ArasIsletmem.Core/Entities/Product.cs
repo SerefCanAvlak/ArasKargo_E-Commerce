@@ -11,7 +11,7 @@ public class Product
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = string.Empty; // MongoDB ObjectId string representation
     public string SellerId { get; set; } = string.Empty; // Store as string in NoSQL for simplicity or Guid
-    public string SellerName { get; set; } = "Lina Atölye";
+    public string SellerName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }

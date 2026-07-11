@@ -65,7 +65,7 @@ public class ProductService : IProductService
         cleanTitle = cleanTitle.Replace(" ", "-");
         var slug = cleanTitle + "-" + new Random().Next(100, 999);
 
-        string sellerName = "Lina Atölye";
+        string sellerName = "Mağaza";
         if (Guid.TryParse(sellerId, out var sellerGuid))
         {
             var seller = await _sellerRepository.GetByIdAsync(sellerGuid);
@@ -185,10 +185,6 @@ public class ProductService : IProductService
         if (product == null) return;
         
         string sellerId = product.SellerId;
-        if (sellerId == "seller@arasisletmem.com")
-        {
-            sellerId = "d3b07384-d113-4956-a55e-214545645645";
-        }
 
         if (Guid.TryParse(sellerId, out var sellerGuid))
         {
