@@ -11,7 +11,7 @@ export default function SellerStorePage({ onAddToCart }) {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [storeName, setStoreName] = useState('Lina Atölye');
+  const [storeName, setStoreName] = useState('Yükleniyor...');
   const [storeSearch, setStoreSearch] = useState('');
 
   useEffect(() => {
@@ -29,9 +29,9 @@ export default function SellerStorePage({ onAddToCart }) {
 
       // Dynamically extract store/seller name from the first product
       if (storeProds.length > 0) {
-        setStoreName(storeProds[0].sellerName || 'Lina Atölye');
+        setStoreName(storeProds[0].sellerName || 'Mağaza');
       } else {
-        setStoreName('Lina Atölye');
+        setStoreName('Mağaza');
       }
     } catch {
       setProducts([]);
