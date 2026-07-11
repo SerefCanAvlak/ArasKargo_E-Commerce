@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Check, CheckCircle } from 'lucide-react';
+import { Truck, Check, CheckCircle, XCircle } from 'lucide-react';
 import { getOrders, getProducts as fetchProducts, callCourier, updateOrderStatus } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -10,6 +10,7 @@ const statusMap = {
   2: { label: 'Hazırlanıyor', cls: 'badge-preparing' },
   3: { label: 'Kargoda', cls: 'badge-incargo' },
   4: { label: 'Teslim Edildi', cls: 'badge-delivered' },
+  5: { label: 'İptal Edildi', cls: 'badge-cancelled' },
 };
 
 export default function OrdersPage() {
@@ -55,6 +56,17 @@ export default function OrdersPage() {
       setTimeout(loadData, 500);
     } catch (err) {
       addToast('Güncelleme hatası: ' + err.message, 'error');
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Siparişi iptal etmek istediğinize emin misiniz?')) return;
+    try {
+      await updateOrderStatus(orderId, 5);
+      addToast('Sipariş başarıyla iptal edildi.');
+      setTimeout(loadData, 500);
+    } catch (err) {
+      addToast('İptal hatası: ' + err.message, 'error');
     }
   };
 
@@ -117,9 +129,14 @@ export default function OrdersPage() {
                         <td style={{ textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: 8 }}>
                             {order.orderStatus <= 2 && (
-                              <button className="btn btn-primary btn-sm" onClick={() => handleCallCourier(order.id)}>
-                                <Truck size={14} /> Kurye Çağır
-                              </button>
+                              <>
+                                <button className="btn btn-primary btn-sm" onClick={() => handleCallCourier(order.id)}>
+                                  <Truck size={14} /> Kurye Çağır
+                                </button>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleCancelOrder(order.id)}>
+                                  <XCircle size={14} /> İptal Et
+                                </button>
+                              </>
                             )}
                             {order.orderStatus === 3 && (
                               <button className="btn btn-success btn-sm" onClick={() => handleDeliver(order.id)} title="T-SQL Trigger'ı çalıştırır">
@@ -129,6 +146,11 @@ export default function OrdersPage() {
                             {order.orderStatus === 4 && (
                               <span style={{ fontSize: 12, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
                                 <CheckCircle size={14} /> Tamamlandı
+                              </span>
+                            )}
+                            {order.orderStatus === 5 && (
+                              <span style={{ fontSize: 12, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                                <XCircle size={14} /> İptal Edildi
                               </span>
                             )}
                           </div>

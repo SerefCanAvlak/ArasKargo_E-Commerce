@@ -1955,6 +1955,7 @@ ul { list-style: none; }
 .badge-preparing { color: #d97706; background: #fffbeb; }
 .badge-incargo { color: #2563eb; background: #eff6ff; }
 .badge-delivered { color: #059669; background: #ecfdf5; }
+.badge-cancelled { color: #dc2626; background: #fef2f2; }
 
 /* ═══════════════════════════════════════════════════
    TABLE
