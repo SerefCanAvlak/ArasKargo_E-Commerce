@@ -15,6 +15,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProductsSearchPage from './pages/ProductsSearchPage';
 import SellerStorePage from './pages/SellerStorePage';
+import CargoTrackingPage from './pages/CargoTrackingPage';
 
 import DashboardPage from './pages/seller/DashboardPage';
 import ProductsPage from './pages/seller/ProductsPage';
@@ -151,6 +152,8 @@ function App() {
         <Route path="/products" element={<ProductsSearchPage onAddToCart={handleAddToCart} />} />
         <Route path="/products/:slug" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
         <Route path="/store/:sellerId" element={<SellerStorePage onAddToCart={handleAddToCart} />} />
+        <Route path="/tracking" element={<CargoTrackingPage />} />
+        <Route path="/tracking/:trackingNumber" element={<CargoTrackingPage />} />
         <Route path="/checkout" element={
           <CheckoutPage cart={cart} products={products} onClearCart={handleClearCart} />
         } />

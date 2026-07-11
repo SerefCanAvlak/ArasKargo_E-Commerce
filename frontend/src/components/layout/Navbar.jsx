@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu, Truck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getCategories } from '../../api';
 
@@ -192,6 +192,11 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
                 <span>Giriş Yap</span>
               </Link>
             )}
+
+            <Link to="/tracking" className="navbar-action-item">
+              <Truck size={20} style={{ color: 'var(--success)' }} />
+              <span>Kargom Nerede</span>
+            </Link>
 
             <Link to="/" className="navbar-action-item">
               <Heart size={20} />
