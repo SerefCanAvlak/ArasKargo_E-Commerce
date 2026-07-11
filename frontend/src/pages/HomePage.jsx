@@ -10,7 +10,7 @@ import ProductCard from '../components/ui/ProductCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useToast } from '../components/ui/Toast';
 
-export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
+export default function HomePage({ searchQuery, onSearchChange, onAddToCart, favorites = [], onToggleFavorite }) {
   const [products, setProducts] = useState([]);
   const [popularStores, setPopularStores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -318,6 +318,8 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
                 product={product}
                 onAddToCart={onAddToCart}
                 onNavigate={handleNavigate}
+                isFavorited={favorites.includes(product.id)}
+                onToggleFavorite={onToggleFavorite}
               />
             ))}
           </div>

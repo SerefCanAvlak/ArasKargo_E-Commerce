@@ -5,7 +5,7 @@ import { getProducts } from '../api';
 import ProductCard from '../components/ui/ProductCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
-export default function SellerStorePage({ onAddToCart }) {
+export default function SellerStorePage({ onAddToCart, favorites = [], onToggleFavorite }) {
   const { sellerId } = useParams();
   const navigate = useNavigate();
 
@@ -234,6 +234,8 @@ export default function SellerStorePage({ onAddToCart }) {
               product={product}
               onAddToCart={onAddToCart}
               onNavigate={handleNavigateProduct}
+              isFavorited={favorites.includes(product.id)}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </div>

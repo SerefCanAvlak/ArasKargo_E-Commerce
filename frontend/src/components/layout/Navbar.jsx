@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getCategories } from '../../api';
 import logoImg from '../../assets/Aras_Isletmem_Logo.png';
 
-export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearchChange }) {
+export default function Navbar({ cartCount = 0, onCartOpen, favoritesCount = 0, onFavoritesOpen, searchQuery, onSearchChange }) {
   const { isAuthenticated, isSeller, isCustomer, userEmail, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -205,10 +205,13 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
               </Link>
             )}
 
-            <Link to="/" className="navbar-action-item">
-              <Heart size={20} />
+            <button className="navbar-action-item" onClick={onFavoritesOpen} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              <div style={{ position: 'relative' }}>
+                <Heart size={20} />
+                {favoritesCount > 0 && <span className="cart-badge" style={{ background: '#dc2626' }}>{favoritesCount}</span>}
+              </div>
               <span>Favorilerim</span>
-            </Link>
+            </button>
 
             {(isCustomer || !isAuthenticated) && (
               <button className="navbar-action-item navbar-cart-trigger" onClick={onCartOpen}>

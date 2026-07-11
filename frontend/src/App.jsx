@@ -7,6 +7,7 @@ import { getBasket, addToBasket, updateBasketItem, removeBasketItem, getProducts
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import CartDrawer from './components/cart/CartDrawer';
+import FavoritesDrawer from './components/layout/FavoritesDrawer';
 
 import HomePage from './pages/HomePage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -36,7 +37,30 @@ function App() {
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [favsOpen, setFavsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('favorites') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleToggleFavorite = useCallback((productId) => {
+    setFavorites(prev => {
+      let updated;
+      if (prev.includes(productId)) {
+        updated = prev.filter(id => id !== productId);
+        addToast('Ürün favorilerinizden kaldırıldı.', 'info');
+      } else {
+        updated = [...prev, productId];
+        addToast('Ürün favorilerinize eklendi! ❤️');
+      }
+      localStorage.setItem('favorites', JSON.stringify(updated));
+      return updated;
+    });
+  }, [addToast]);
 
   const isSellerRoute = location.pathname.startsWith('/seller');
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
@@ -140,18 +164,20 @@ function App() {
   // Public pages with navbar + footer
   return (
     <>
-      <Navbar
-        cartCount={cartCount}
+      <Navbar 
+        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)} 
         onCartOpen={() => setCartOpen(true)}
+        favoritesCount={favorites.length}
+        onFavoritesOpen={() => setFavsOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
 
       <Routes>
-        <Route path="/" element={<HomePage searchQuery={searchQuery} onSearchChange={setSearchQuery} onAddToCart={handleAddToCart} />} />
-        <Route path="/products" element={<ProductsSearchPage onAddToCart={handleAddToCart} />} />
-        <Route path="/products/:slug" element={<ProductDetailPage onAddToCart={handleAddToCart} />} />
-        <Route path="/store/:sellerId" element={<SellerStorePage onAddToCart={handleAddToCart} />} />
+        <Route path="/" element={<HomePage searchQuery={searchQuery} onSearchChange={setSearchQuery} onAddToCart={handleAddToCart} favorites={favorites} onToggleFavorite={handleToggleFavorite} />} />
+        <Route path="/products" element={<ProductsSearchPage onAddToCart={handleAddToCart} favorites={favorites} onToggleFavorite={handleToggleFavorite} />} />
+        <Route path="/products/:slug" element={<ProductDetailPage onAddToCart={handleAddToCart} favorites={favorites} onToggleFavorite={handleToggleFavorite} />} />
+        <Route path="/store/:sellerId" element={<SellerStorePage onAddToCart={handleAddToCart} favorites={favorites} onToggleFavorite={handleToggleFavorite} />} />
         <Route path="/tracking" element={<CargoTrackingPage />} />
         <Route path="/tracking/:trackingNumber" element={<CargoTrackingPage />} />
         <Route path="/checkout" element={
@@ -168,6 +194,15 @@ function App() {
         products={products}
         onUpdateQty={handleUpdateQty}
         onRemove={handleRemove}
+      />
+
+      <FavoritesDrawer
+        isOpen={favsOpen}
+        onClose={() => setFavsOpen(false)}
+        favorites={favorites}
+        products={products}
+        onRemove={handleToggleFavorite}
+        onAddToCart={handleAddToCart}
       />
     </>
   );

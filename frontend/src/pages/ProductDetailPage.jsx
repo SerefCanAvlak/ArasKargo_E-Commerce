@@ -8,7 +8,7 @@ import { getProductBySlug, getProducts } from '../api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useToast } from '../components/ui/Toast';
 
-export default function ProductDetailPage({ onAddToCart }) {
+export default function ProductDetailPage({ onAddToCart, favorites = [], onToggleFavorite }) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -110,8 +110,15 @@ export default function ProductDetailPage({ onAddToCart }) {
               <span className="badge-kargo-bedava">
                 <Truck size={14} /> Kargo Bedava
               </span>
-              <button className="gallery-fav-btn" title="Favorilere Ekle" onClick={() => addToast('Favorilere eklendi! ❤️')}>
-                <Heart size={18} />
+              <button 
+                className="gallery-fav-btn" 
+                title={product && favorites.includes(product.id) ? "Favorilerimden Çıkar" : "Favorilere Ekle"} 
+                onClick={() => product && onToggleFavorite?.(product.id)}
+              >
+                <Heart size={18} style={{ 
+                  color: product && favorites.includes(product.id) ? '#dc2626' : undefined, 
+                  fill: product && favorites.includes(product.id) ? '#dc2626' : 'transparent' 
+                }} />
               </button>
               <img src={mainImageToShow} alt={product.title} />
               
