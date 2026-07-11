@@ -9,6 +9,7 @@ public class ProductDto
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public List<string> Images { get; set; } = new List<string>();
+    public string? CoverImage { get; set; }
     public string? CategoryId { get; set; }
     public string? BrandId { get; set; }
 }

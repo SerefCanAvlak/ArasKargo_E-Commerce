@@ -9,6 +9,7 @@ export default function ProductDetailPage({ onAddToCart }) {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState('');
 
   useEffect(() => {
     if (slug) loadProduct();
@@ -19,6 +20,9 @@ export default function ProductDetailPage({ onAddToCart }) {
     try {
       const data = await getProductBySlug(slug);
       setProduct(data);
+      if (data) {
+        setActiveImage(data.coverImage || data.images?.[0] || '');
+      }
     } catch {
       setProduct(null);
     } finally {
@@ -39,7 +43,7 @@ export default function ProductDetailPage({ onAddToCart }) {
     </div>
   );
 
-  const imgSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
+  const mainImageToShow = activeImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
 
   return (
     <div className="container page-content">
@@ -52,18 +56,49 @@ export default function ProductDetailPage({ onAddToCart }) {
       </button>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
-        {/* Image */}
-        <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-          aspectRatio: '1/1'
-        }}>
-          <img src={imgSrc} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {/* Left Side: Images */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Main Image */}
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-xl)',
+            overflow: 'hidden',
+            aspectRatio: '1/1'
+          }}>
+            <img src={mainImageToShow} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+
+          {/* Thumbnails Row */}
+          {product.images?.length > 1 && (
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+              {product.images.map((imgUrl, index) => {
+                const isActive = activeImage === imgUrl;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => setActiveImage(imgUrl)}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                      border: isActive ? '2px solid var(--primary)' : '1px solid var(--border)',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      background: 'var(--surface)',
+                      transition: 'var(--transition)'
+                    }}
+                  >
+                    <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Info */}
+        {/* Right Side: Info */}
         <div>
           <h1 style={{
             fontFamily: 'var(--font-heading)',

@@ -16,6 +16,7 @@ public class Product
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public List<string> Images { get; set; } = new List<string>();
+    public string? CoverImage { get; set; }
     public string Slug { get; set; } = string.Empty;
     public string SharedLink { get; set; } = string.Empty;
 

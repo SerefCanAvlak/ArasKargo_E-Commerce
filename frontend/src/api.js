@@ -64,6 +64,17 @@ export const updateProduct = (id, data) =>
     method: 'PUT', headers: getHeaders(true), body: JSON.stringify(data)
   }).then(handleResponse);
 
+export const uploadProductImages = (formData) => {
+  const token = localStorage.getItem('aras_token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(`${API_BASE}/api/products/upload-images`, {
+    method: 'POST',
+    headers,
+    body: formData
+  }).then(handleResponse);
+};
+
 export const deleteProduct = (id) =>
   fetch(`${API_BASE}/api/products/${id}`, {
     method: 'DELETE', headers: getHeaders(true)

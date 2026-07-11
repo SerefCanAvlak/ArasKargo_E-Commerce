@@ -69,6 +69,7 @@ public class ProductService : IProductService
             Price = productDto.Price,
             Stock = productDto.Stock,
             Images = productDto.Images,
+            CoverImage = productDto.CoverImage,
             Slug = slug,
             SharedLink = $"https://arasisletmem.com/urun/{slug}",
             CategoryId = productDto.CategoryId,
@@ -139,6 +140,7 @@ public class ProductService : IProductService
             product.Price = productDto.Price;
             product.Stock = productDto.Stock;
             product.Images = productDto.Images;
+            product.CoverImage = productDto.CoverImage;
             product.CategoryId = productDto.CategoryId;
             product.CategoryName = categoryName;
             product.BrandId = productDto.BrandId;

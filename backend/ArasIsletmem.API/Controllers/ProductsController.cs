@@ -3,6 +3,11 @@ using ArasIsletmem.Core.DTOs;
 using ArasIsletmem.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Linq;
+using System.Collections.Generic;
+using System;
 
 namespace ArasIsletmem.API.Controllers;
 
@@ -130,5 +135,55 @@ public class ProductsController : ControllerBase
 
         await _productService.DeleteProductAsync(id);
         return NoContent();
+    }
+
+    [HttpPost("upload-images")]
+    [Authorize(Roles = "Seller")]
+    public async Task<IActionResult> UploadImages(IFormFileCollection files)
+    {
+        if (files == null || files.Count == 0)
+        {
+            return BadRequest(new { message = "Lütfen en az bir görsel yükleyin." });
+        }
+
+        var uploadedUrls = new List<string>();
+        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products");
+
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        foreach (var file in files)
+        {
+            if (file.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest(new { message = $"Desteklenmeyen dosya formatı: {file.FileName}. Sadece JPG, JPEG, PNG, WEBP yükleyebilirsiniz." });
+                }
+
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    return BadRequest(new { message = $"Dosya boyutu çok büyük: {file.FileName}. Maksimum dosya boyutu 5MB olmalıdır." });
+                }
+
+                var fileName = Guid.NewGuid().ToString() + extension;
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var request = HttpContext.Request;
+                var fileUrl = $"{request.Scheme}://{request.Host}/uploads/products/{fileName}";
+                uploadedUrls.Add(fileUrl);
+            }
+        }
+
+        return Ok(new { urls = uploadedUrls });
     }
 }

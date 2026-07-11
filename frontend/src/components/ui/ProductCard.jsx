@@ -1,8 +1,8 @@
 import { ShoppingCart } from 'lucide-react';
 
 export default function ProductCard({ product, onAddToCart, onNavigate }) {
-  const imgSrc = product.images && product.images[0]
-    ? product.images[0]
+  const imgSrc = product.coverImage || (product.images && product.images[0])
+    ? (product.coverImage || product.images[0])
     : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60';
 
   return (

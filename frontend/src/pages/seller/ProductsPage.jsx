@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Copy, ExternalLink, Trash2, X } from 'lucide-react';
-import { getSellerProducts, createProduct, deleteProduct } from '../../api';
+import { Plus, Copy, ExternalLink, Trash2, X, Upload, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { getSellerProducts, createProduct, deleteProduct, uploadProductImages } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../components/ui/Toast';
@@ -11,10 +11,10 @@ export default function ProductsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const { addToast } = useToast();
 
-  const [form, setForm] = useState({
-    title: '', description: '', price: '', stock: '',
-    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60'
-  });
+  const [form, setForm] = useState({ title: '', description: '', price: '', stock: '' });
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [coverImage, setCoverImage] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -30,19 +30,69 @@ export default function ProductsPage() {
     }
   };
 
+  const handleFileChange = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    setUploading(true);
+    try {
+      const result = await uploadProductImages(formData);
+      const newUrls = result.urls || [];
+      
+      setUploadedImages(prev => {
+        const updated = [...prev, ...newUrls];
+        // Default cover image to the first uploaded one if not already set
+        if (!coverImage && updated.length > 0) {
+          setCoverImage(updated[0]);
+        }
+        return updated;
+      });
+      
+      addToast('Görseller başarıyla yüklendi!');
+    } catch (err) {
+      addToast('Görsel yükleme başarısız: ' + err.message, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUploadedImage = (urlToRemove) => {
+    setUploadedImages(prev => {
+      const updated = prev.filter(url => url !== urlToRemove);
+      if (coverImage === urlToRemove) {
+        setCoverImage(updated[0] || '');
+      }
+      return updated;
+    });
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
+    if (uploadedImages.length === 0) {
+      addToast('Lütfen en az bir ürün görseli yükleyin.', 'error');
+      return;
+    }
+    
     try {
       await createProduct({
         title: form.title,
         description: form.description,
         price: parseFloat(form.price),
         stock: parseInt(form.stock),
-        images: [form.imageUrl]
+        images: uploadedImages,
+        coverImage: coverImage || uploadedImages[0]
       });
+      
       addToast('Ürün başarıyla eklendi!');
       setModalOpen(false);
-      setForm({ title: '', description: '', price: '', stock: '', imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60' });
+      setForm({ title: '', description: '', price: '', stock: '' });
+      setUploadedImages([]);
+      setCoverImage('');
       loadProducts();
     } catch (err) {
       addToast('Ürün eklenemedi: ' + err.message, 'error');
@@ -93,11 +143,16 @@ export default function ProductsPage() {
         ) : (
           <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
             {products.map(product => {
-              const imgSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400';
+              const imgSrc = product.coverImage || product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400';
               return (
                 <div key={product.id} className="card" style={{ overflow: 'hidden' }}>
-                  <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: 'var(--bg)' }}>
+                  <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
                     <img src={imgSrc} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {product.images?.length > 1 && (
+                      <span className="badge badge-received" style={{ position: 'absolute', top: 12, right: 12, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+                        +{product.images.length - 1} Görsel
+                      </span>
+                    )}
                   </div>
                   <div className="card-body">
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{product.title}</h3>
@@ -134,7 +189,7 @@ export default function ProductsPage() {
         {/* Add Product Modal */}
         {modalOpen && (
           <div className="modal-overlay">
-            <div className="modal-content">
+            <div className="modal-content" style={{ maxWidth: 600 }}>
               <div className="modal-header">
                 <h3 className="modal-title">Yeni Ürün Ekle</h3>
                 <button className="btn btn-ghost btn-icon" onClick={() => setModalOpen(false)}>
@@ -160,18 +215,107 @@ export default function ProductsPage() {
                     <input className="form-input" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} required />
                   </div>
                 </div>
+
+                {/* Multiple Images Upload & Cover Selector Section */}
                 <div className="form-group">
-                  <label className="form-label">Görsel URL</label>
-                  <input className="form-input" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} required />
-                  {form.imageUrl && (
-                    <div style={{ marginTop: 8, borderRadius: 'var(--radius-md)', overflow: 'hidden', height: 120, background: 'var(--bg)' }}>
-                      <img src={form.imageUrl} alt="Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <label className="form-label">Ürün Görselleri</label>
+                  
+                  {/* File Upload Zone */}
+                  <div style={{
+                    border: '2px dashed var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '24px 16px',
+                    textAlign: 'center',
+                    background: 'var(--bg)',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      onChange={handleFileChange}
+                      disabled={uploading}
+                      style={{
+                        position: 'absolute',
+                        top: 0, left: 0, width: '100%', height: '100%',
+                        opacity: 0, cursor: 'pointer'
+                      }}
+                    />
+                    <Upload size={24} style={{ color: 'var(--text-secondary)', marginBottom: 8 }} />
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>Görsel Seçmek İçin Tıklayın</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Birden fazla dosya seçebilirsiniz (JPG, PNG, WEBP)</div>
+                  </div>
+
+                  {uploading && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+                      <LoadingSpinner /> Görseller yükleniyor...
+                    </div>
+                  )}
+
+                  {/* Uploaded Thumbnails Grid */}
+                  {uploadedImages.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--text-secondary)' }}>
+                        Yüklenen Görseller (Kapak resmi seçmek için üzerine tıklayın):
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+                        {uploadedImages.map((url, index) => {
+                          const isCover = coverImage === url;
+                          return (
+                            <div 
+                              key={index} 
+                              onClick={() => setCoverImage(url)}
+                              style={{
+                                position: 'relative',
+                                aspectRatio: '1/1',
+                                borderRadius: 'var(--radius-sm)',
+                                overflow: 'hidden',
+                                border: isCover ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                cursor: 'pointer',
+                                transition: 'var(--transition)',
+                                background: 'var(--bg)'
+                              }}
+                            >
+                              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              {isCover && (
+                                <div style={{
+                                  position: 'absolute', top: 4, left: 4,
+                                  background: 'var(--primary)', color: '#fff',
+                                  fontSize: 8, fontWeight: 800, padding: '2px 4px',
+                                  borderRadius: 2, textTransform: 'uppercase',
+                                  display: 'flex', alignItems: 'center', gap: 2
+                                }}>
+                                  <CheckCircle2 size={8} /> Kapak
+                                </div>
+                              )}
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeUploadedImage(url);
+                                }}
+                                style={{
+                                  position: 'absolute', top: 4, right: 4,
+                                  width: 18, height: 18, borderRadius: '50%',
+                                  background: 'rgba(0,0,0,0.6)', border: 'none',
+                                  display: 'flex', alignItems: 'center', justify: 'center',
+                                  color: '#fff', fontSize: 10, cursor: 'pointer'
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>İptal</button>
-                  <button type="submit" className="btn btn-primary">Ürünü Kaydet</button>
+                  <button type="submit" className="btn btn-primary" disabled={uploading}>Ürünü Kaydet</button>
                 </div>
               </form>
             </div>
