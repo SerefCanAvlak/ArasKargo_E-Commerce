@@ -1,10 +1,37 @@
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getCategories } from '../../api';
 
 export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearchChange }) {
   const { isAuthenticated, isSeller, isCustomer, userEmail, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [categories, setCategories] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState({ id: '', name: 'Tüm Kategoriler' });
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    loadCategories();
+
+    // Close dropdown on click outside
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data || []);
+    } catch {}
+  };
 
   const handleLogout = () => {
     logout();
@@ -13,16 +40,21 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
 
   const handleLogoClick = () => {
     onSearchChange?.('');
+    setSelectedCategory({ id: '', name: 'Tüm Kategoriler' });
     navigate('/');
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    navigate(`/products?q=${encodeURIComponent(searchQuery || '')}`);
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (selectedCategory.id) params.set('category', selectedCategory.name);
+    navigate(`/products?${params.toString()}`);
   };
 
   const handleCategoryClick = (catName) => {
     onSearchChange?.(catName);
+    setSelectedCategory(categories.find(c => c.name === catName) || { id: '', name: 'Tüm Kategoriler' });
     navigate(`/products?category=${encodeURIComponent(catName)}`);
   };
 
@@ -47,11 +79,80 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
           </div>
 
           {/* Search with Category Select Dropdown */}
-          <form onSubmit={handleSearchSubmit} className="navbar-search-container">
-            <div className="navbar-search-dropdown" onClick={() => navigate('/products')} style={{ cursor: 'pointer' }}>
-              <span>Tüm Kategoriler</span>
+          <form onSubmit={handleSearchSubmit} className="navbar-search-container" style={{ position: 'relative' }} ref={dropdownRef}>
+            <div 
+              className="navbar-search-dropdown" 
+              onClick={() => setShowDropdown(!showDropdown)} 
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
+            >
+              <span>{selectedCategory.name}</span>
               <ChevronDown size={14} />
             </div>
+
+            {showDropdown && (
+              <div 
+                className="dropdown-menu-list"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  width: '210px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-md)',
+                  zIndex: 999,
+                  marginTop: 6,
+                  padding: '6px 0',
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}
+              >
+                <div 
+                  onClick={() => {
+                    setSelectedCategory({ id: '', name: 'Tüm Kategoriler' });
+                    setShowDropdown(false);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: selectedCategory.id === '' ? 'var(--bg)' : 'transparent',
+                    fontWeight: selectedCategory.id === '' ? 700 : 500,
+                    transition: 'var(--transition)'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = 'var(--bg)'}
+                  onMouseLeave={(e) => e.target.style.background = selectedCategory.id === '' ? 'var(--bg)' : 'transparent'}
+                >
+                  Tüm Kategoriler
+                </div>
+                {categories.map(cat => {
+                  const isActive = selectedCategory.id === cat.id;
+                  return (
+                    <div 
+                      key={cat.id}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setShowDropdown(false);
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        background: isActive ? 'var(--bg)' : 'transparent',
+                        fontWeight: isActive ? 700 : 500,
+                        transition: 'var(--transition)'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--bg)'}
+                      onMouseLeave={(e) => e.target.style.background = isActive ? 'var(--bg)' : 'transparent'}
+                    >
+                      {cat.name}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="navbar-search">
               <input
                 type="text"
