@@ -8,6 +8,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
     {
+        builder.ToTable("Orders", tb => tb.HasTrigger("TR_UpdateWalletOnOrderDelivery"));
+
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.OrderNumber)
