@@ -25,6 +25,11 @@ function App() {
   const { addToast } = useToast();
   const location = useLocation();
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
