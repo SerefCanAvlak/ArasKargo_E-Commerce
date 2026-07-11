@@ -182,7 +182,6 @@ export default function Navbar({ cartCount = 0, onCartOpen, searchQuery, onSearc
                 >
                   <User size={20} />
                   <span>{userEmail ? userEmail.split('@')[0] : 'Hesabım'}</span>
-                  <ChevronDown size={14} />
                 </div>
 
                 {showProfileDropdown && (
