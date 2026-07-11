@@ -230,7 +230,7 @@ using (var scope = app.Services.CreateScope())
     // MongoDB Product Seeding
     var productRepo = scope.ServiceProvider.GetRequiredService<IMongoRepository<ArasIsletmem.Core.Entities.Product>>();
     var allProducts = productRepo.GetAllAsync().GetAwaiter().GetResult();
-    if (allProducts == null || !System.Linq.Enumerable.Any(allProducts))
+    if (allProducts == null || !System.Linq.Enumerable.Any(allProducts, p => p.Title == "El Yapımı Seramik Kupa"))
     {
         var categoryList = categoryRepo.GetAllAsync().GetAwaiter().GetResult();
         
