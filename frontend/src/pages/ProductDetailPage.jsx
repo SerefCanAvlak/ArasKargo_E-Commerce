@@ -73,11 +73,9 @@ export default function ProductDetailPage({ onAddToCart }) {
         <div className="breadcrumbs">
           <Link to="/">Ana Sayfa</Link>
           <ChevronRight size={12} />
-          <span>Ev & Yaşam</span>
-          <ChevronRight size={12} />
-          <span>Dekorasyon</span>
-          <ChevronRight size={12} />
-          <span>Seramik</span>
+          <Link to={`/products?category=${encodeURIComponent(product.categoryName || 'Genel')}`}>
+            {product.categoryName || 'Genel'}
+          </Link>
           <ChevronRight size={12} />
           <span className="active">{product.title}</span>
         </div>
