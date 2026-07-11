@@ -73,6 +73,26 @@ export default function ProductsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (!form.title || form.title.trim().length < 3) {
+      addToast('Ürün adı en az 3 karakter olmalıdır.', 'error');
+      return;
+    }
+    if (!form.description || form.description.trim().length < 10) {
+      addToast('Ürün açıklaması en az 10 karakter olmalıdır.', 'error');
+      return;
+    }
+    const parsedPrice = parseFloat(form.price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      addToast('Geçersiz fiyat. Fiyat 0\'dan büyük olmalıdır.', 'error');
+      return;
+    }
+    const parsedStock = parseInt(form.stock);
+    if (isNaN(parsedStock) || parsedStock < 0) {
+      addToast('Geçersiz stok. Stok en az 0 olmalıdır.', 'error');
+      return;
+    }
     if (uploadedImages.length === 0) {
       addToast('Lütfen en az bir ürün görseli yükleyin.', 'error');
       return;
@@ -80,10 +100,10 @@ export default function ProductsPage() {
     
     try {
       await createProduct({
-        title: form.title,
-        description: form.description,
-        price: parseFloat(form.price),
-        stock: parseInt(form.stock),
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: parsedPrice,
+        stock: parsedStock,
         images: uploadedImages,
         coverImage: coverImage || uploadedImages[0]
       });
