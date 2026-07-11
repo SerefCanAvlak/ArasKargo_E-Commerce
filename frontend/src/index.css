@@ -161,7 +161,7 @@ ul { list-style: none; }
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg);
   transition: var(--transition);
 }
@@ -185,6 +185,8 @@ ul { list-style: none; }
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
+  border-top-left-radius: var(--radius-full);
+  border-bottom-left-radius: var(--radius-full);
 }
 
 .navbar-search-dropdown:hover {
@@ -221,6 +223,8 @@ ul { list-style: none; }
   justify-content: center;
   color: #fff;
   transition: var(--transition);
+  border-top-right-radius: var(--radius-full);
+  border-bottom-right-radius: var(--radius-full);
 }
 
 .navbar-search-btn:hover {
