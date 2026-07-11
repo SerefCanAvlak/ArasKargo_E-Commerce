@@ -273,23 +273,22 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
       <div className="container page-content" id="products-section" style={{ borderTop: '1px solid var(--divider)', paddingTop: 40 }}>
         <div className="section-header">
           <h2 className="section-title">
-            {searchQuery ? `"${searchQuery}" için sonuçlar` : 'Fırsat Ürünleri'}
+            Haftalık Fırsat Ürünleri
             <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 8 }}>
-              ({filtered.length} ürün listeleniyor)
+              ({products.length} ürün listeleniyor)
             </span>
           </h2>
         </div>
 
         {loading ? (
           <LoadingSpinner />
-        ) : filtered.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="empty-state">
             <h3>Ürün bulunamadı</h3>
-            <p>Farklı kelimeler veya kategoriler seçerek aramayı deneyin.</p>
           </div>
         ) : (
           <div className="product-grid">
-            {filtered.map(product => (
+            {products.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
