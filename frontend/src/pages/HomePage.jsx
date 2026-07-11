@@ -12,6 +12,7 @@ import { useToast } from '../components/ui/Toast';
 
 export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
   const [products, setProducts] = useState([]);
+  const [popularStores, setPopularStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -24,10 +25,36 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await getProducts(1, 10); // limit to 10 products
-      setProducts(data.items || data || []);
+      const data = await getProducts(1, 100);
+      const allProds = data.items || data || [];
+      setProducts(allProds.slice(0, 10)); // limit to 10 products
+
+      // Extract unique stores
+      const storesMap = {};
+      allProds.forEach(p => {
+        if (p.sellerId && !storesMap[p.sellerId]) {
+          storesMap[p.sellerId] = {
+            id: p.sellerId,
+            name: p.sellerName || 'Mağaza',
+            desc: p.categoryName ? `${p.categoryName} satıcısı` : 'Genel satıcı',
+            rating: (4.5 + Math.random() * 0.4).toFixed(1),
+            img: p.coverImage || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=200'
+          };
+        }
+      });
+      const uniqueStores = Object.values(storesMap);
+      if (uniqueStores.length === 0) {
+        setPopularStores([
+          { id: 'd3b07384-d113-4956-a55e-214545645645', name: 'Test Satıcısı', desc: 'Ev dekorasyonu ve el yapımı ürünler', rating: 4.9, img: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=200' },
+          { id: 'default-2', name: 'Bella Butik', desc: 'Kadın giyim', rating: 4.8, img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200' },
+          { id: 'default-3', name: 'Minimal Home', desc: 'Ev dekorasyon', rating: 4.9, img: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=200' }
+        ]);
+      } else {
+        setPopularStores(uniqueStores.slice(0, 6));
+      }
     } catch {
       setProducts([]);
+      setPopularStores([]);
     } finally {
       setLoading(false);
     }
@@ -63,15 +90,7 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
     { name: 'Fırsatlar', icon: '🏷️', query: 'Fırsat' }
   ];
 
-  // Sample popular stores from screenshot
-  const popularStores = [
-    { name: 'Lina Atölye', desc: 'El yapımı ürünler', rating: 4.9, img: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=200&auto=format&fit=crop&q=60' },
-    { name: 'Bella Butik', desc: 'Kadın giyim', rating: 4.8, img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&auto=format&fit=crop&q=60' },
-    { name: 'Minimal Home', desc: 'Ev dekorasyon', rating: 4.9, img: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=200&auto=format&fit=crop&q=60' },
-    { name: 'Craftoria', desc: 'Hobi & el işi', rating: 4.8, img: 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=200&auto=format&fit=crop&q=60' },
-    { name: 'Doğa Defteri', desc: 'Sürdürülebilir yaşam', rating: 4.9, img: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=200&auto=format&fit=crop&q=60' },
-    { name: 'TechPlus', desc: 'Elektronik', rating: 4.7, img: 'https://images.unsplash.com/photo-1468495244122-4a6c3104de0f?w=200&auto=format&fit=crop&q=60' }
-  ];
+
 
   return (
     <div className="home-v2">
@@ -251,7 +270,12 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart }) {
           </div>
           <div className="stores-grid">
             {popularStores.map((store, idx) => (
-              <div key={idx} className="store-card">
+              <div 
+                key={store.id || idx} 
+                className="store-card"
+                onClick={() => store.id && navigate(`/store/${store.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="store-img-wrapper">
                   <img src={store.img} alt={store.name} />
                 </div>
