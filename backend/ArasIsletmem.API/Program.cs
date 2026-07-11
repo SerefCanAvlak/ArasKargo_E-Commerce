@@ -149,6 +149,50 @@ app.UseStaticFiles();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var mockSellerId = Guid.Parse("d3b07384-d113-4956-a55e-214545645645");
+        var mockCustomerId = Guid.Parse("a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d");
+
+        // Update mock seller and customer instead of deleting them to avoid reference constraints
+        var mockSeller = dbContext.Sellers.FirstOrDefault(s => s.Id == mockSellerId);
+        if (mockSeller != null)
+        {
+            mockSeller.CompanyName = "Test Satıcısı";
+        }
+
+        var mockCustomer = dbContext.Customers.FirstOrDefault(c => c.Id == mockCustomerId);
+        if (mockCustomer != null)
+        {
+            mockCustomer.FirstName = "Test";
+            mockCustomer.LastName = "Müşterisi";
+        }
+
+        dbContext.SaveChanges();
+
+        // MongoDB clean up
+        var productRepo = scope.ServiceProvider.GetRequiredService<IMongoRepository<ArasIsletmem.Core.Entities.Product>>();
+        var allProducts = productRepo.GetAllAsync().GetAwaiter().GetResult();
+        if (allProducts != null)
+        {
+            foreach (var p in allProducts)
+            {
+                if (p.SellerId == "d3b07384-d113-4956-a55e-214545645645" || p.SellerId == "seller@arasisletmem.com")
+                {
+                    productRepo.RemoveAsync(p.Id).GetAwaiter().GetResult();
+                }
+            }
+        }
+    }
+    catch (Exception)
+    {
+        // Fail silently during startup cleanup
+    }
+}
+
 app.MapControllers();
 
 app.Run();
