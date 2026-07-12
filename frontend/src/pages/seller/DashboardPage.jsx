@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, Package, Wallet, CheckCircle, TrendingUp } from 'lucide-react';
+import { DollarSign, Package, Wallet, CheckCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 import { getSellerDashboard, getSellerWallet } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
@@ -70,6 +70,18 @@ export default function DashboardPage() {
     }
   };
 
+  const salesData = dashboard?.dailySales || [];
+  const firstHalf = salesData.slice(0, 3).reduce((sum, s) => sum + s.totalAmount, 0);
+  const secondHalf = salesData.slice(3).reduce((sum, s) => sum + s.totalAmount, 0);
+  let trendPercent = 0;
+  if (firstHalf > 0) {
+    trendPercent = ((secondHalf - firstHalf) / firstHalf) * 100;
+  } else if (secondHalf > 0) {
+    trendPercent = 100;
+  }
+  const isPositive = trendPercent > 0;
+  const isZero = trendPercent === 0;
+
   return (
     <div className="seller-layout">
       <SellerSidebar />
@@ -132,9 +144,16 @@ export default function DashboardPage() {
                 <div className="card-body">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700 }}>Satış Trendi</h3>
-                    <span className="badge badge-delivered" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <TrendingUp size={12} /> +12.4%
-                    </span>
+                    {!isZero ? (
+                      <span className={`badge ${isPositive ? 'badge-delivered' : 'badge-cancelled'}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        {isPositive ? '+' : ''}{trendPercent.toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="badge" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--divider)', color: 'var(--text-secondary)' }}>
+                        Stabil
+                      </span>
+                    )}
                   </div>
                   <div style={{ height: 220, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 12, position: 'relative' }}>
                     {(() => {
