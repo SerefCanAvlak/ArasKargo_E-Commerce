@@ -15,32 +15,31 @@ const fixImageUrls = (obj) => {
     return obj.map(fixImageUrls);
   }
   if (typeof obj === 'object') {
-    if (obj.images && Array.isArray(obj.images)) {
-      obj.images = obj.images.map(url => {
-        if (typeof url === 'string') {
-          const idx = url.indexOf('/uploads/products/');
-          if (idx !== -1) {
-            return `${API_BASE}${url.substring(idx)}`;
-          }
-          if (url.startsWith('uploads/products/')) {
-            return `${API_BASE}/${url}`;
-          }
-        }
-        return url;
-      });
-    }
-    if (typeof obj.image === 'string') {
-      const idx = obj.image.indexOf('/uploads/products/');
-      if (idx !== -1) {
-        obj.image = `${API_BASE}${obj.image.substring(idx)}`;
-      } else if (obj.image.startsWith('uploads/products/')) {
-        obj.image = `${API_BASE}/${obj.image}`;
-      }
-    }
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
-          obj[key] = fixImageUrls(obj[key]);
+        const val = obj[key];
+        if (typeof val === 'string') {
+          const idx = val.indexOf('/uploads/products/');
+          if (idx !== -1) {
+            obj[key] = `${API_BASE}${val.substring(idx)}`;
+          } else if (val.startsWith('uploads/products/')) {
+            obj[key] = `${API_BASE}/${val}`;
+          }
+        } else if (Array.isArray(val)) {
+          obj[key] = val.map(item => {
+            if (typeof item === 'string') {
+              const idx = item.indexOf('/uploads/products/');
+              if (idx !== -1) {
+                return `${API_BASE}${item.substring(idx)}`;
+              }
+              if (item.startsWith('uploads/products/')) {
+                return `${API_BASE}/${item}`;
+              }
+            }
+            return item;
+          });
+        } else if (typeof val === 'object' && val !== null) {
+          obj[key] = fixImageUrls(val);
         }
       }
     }
