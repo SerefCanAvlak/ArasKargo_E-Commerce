@@ -151,12 +151,13 @@ export default function DashboardPage() {
                       return sales.map((sale, i) => {
                         const pct = (sale.totalAmount / maxSale) * 100;
                         const barHeight = sale.totalAmount > 0 ? Math.max(pct, 8) : 0;
-                        const isHigh = i >= 5;
                         return (
                           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }} title={`${sale.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL`}>
                             <div style={{
                               width: '100%', height: `${barHeight}%`,
-                              background: isHigh ? 'var(--primary)' : 'var(--bg)',
+                              background: sale.totalAmount > 0 
+                                ? 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)' 
+                                : 'var(--bg)',
                               borderRadius: '6px 6px 0 0',
                               transition: 'height 0.5s ease',
                               position: 'relative'
