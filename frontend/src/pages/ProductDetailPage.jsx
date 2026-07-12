@@ -276,7 +276,7 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
 
               {activeTab === 'return' && (
                 <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)' }}>
-                  Aras Pasajı güvencesiyle satın aldığınız ürünleri teslim aldığınız tarihten itibaren 14 gün içerisinde ücretsiz olarak iade edebilirsiniz. Kırık veya hasarlı gelen ürünler için teslimat sırasında tutanak tutulması rica olunur.
+                  Aras İşletmem güvencesiyle satın aldığınız ürünleri teslim aldığınız tarihten itibaren 14 gün içerisinde ücretsiz olarak iade edebilirsiniz. Kırık veya hasarlı gelen ürünler için teslimat sırasında tutanak tutulması rica olunur.
                 </p>
               )}
 

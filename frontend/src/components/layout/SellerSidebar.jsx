@@ -47,7 +47,7 @@ export default function SellerSidebar() {
 
         <Link to="/" className="sidebar-link">
           <Store size={18} />
-          Pasaj Vitrinine Git
+          Mağaza Vitrinine Git
         </Link>
       </nav>
 
