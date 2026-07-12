@@ -156,5 +156,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<DashboardHub>("/hub/dashboard");
+app.MapFallbackToFile("index.html");
 
 app.Run();

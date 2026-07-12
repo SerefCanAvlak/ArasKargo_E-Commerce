@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5086';
+const API_BASE = window.location.port === '5173' ? 'http://localhost:5086' : window.location.origin;
 
 const getHeaders = (includeAuth = false) => {
   const headers = { 'Content-Type': 'application/json' };
