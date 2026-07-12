@@ -22,6 +22,11 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDto orderDto)
     {
+        var customerIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(customerIdStr) && Guid.TryParse(customerIdStr, out var customerGuid))
+        {
+            orderDto.CustomerId = customerGuid;
+        }
         var orderNumber = await _orderService.CreateOrderAsync(orderDto);
         return Accepted(new { OrderNumber = orderNumber, Status = "PaymentReceived" });
     }
@@ -30,6 +35,20 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var orders = await _orderService.GetAllOrdersAsync();
+        return Ok(orders);
+    }
+
+    [HttpGet("customer")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> GetCustomerOrders()
+    {
+        var customerIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(customerIdStr) || !Guid.TryParse(customerIdStr, out var customerGuid))
+        {
+            return Unauthorized(new { message = "Müşteri kimliği bulunamadı." });
+        }
+
+        var orders = await _orderService.GetOrdersByCustomerIdAsync(customerGuid);
         return Ok(orders);
     }
 

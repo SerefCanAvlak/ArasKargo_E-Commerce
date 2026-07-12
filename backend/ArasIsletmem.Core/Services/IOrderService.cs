@@ -15,4 +15,5 @@ public interface IOrderService
     Task UpdateOrderStatusAsync(Guid id, OrderStatus status);
     Task<string> CallCourierAsync(Guid orderId);
     Task<IEnumerable<Order>> GetOrdersBySellerIdAsync(Guid sellerId);
+    Task<IEnumerable<Order>> GetOrdersByCustomerIdAsync(Guid customerId);
 }

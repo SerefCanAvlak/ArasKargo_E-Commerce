@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu, Truck } from 'lucide-react';
+import { Search, ShoppingCart, User, Heart, LogOut, ChevronDown, Menu, Truck, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getCategories } from '../../api';
 import logoImg from '../../assets/Aras_Isletmem_Logo.png';
@@ -185,6 +185,12 @@ export default function Navbar({ cartCount = 0, onCartOpen, favoritesCount = 0, 
                       <Link to="/seller/dashboard" className="profile-dropdown-item" onClick={() => setShowProfileDropdown(false)}>
                         <User size={16} />
                         <span>Satıcı Paneli</span>
+                      </Link>
+                    )}
+                    {isCustomer && (
+                      <Link to="/siparislerim" className="profile-dropdown-item" onClick={() => setShowProfileDropdown(false)}>
+                        <ShoppingBag size={16} />
+                        <span>Siparişlerim</span>
                       </Link>
                     )}
                     <Link to="/tracking" className="profile-dropdown-item" onClick={() => setShowProfileDropdown(false)}>

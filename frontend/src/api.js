@@ -144,7 +144,7 @@ export const clearBasket = () =>
 // ─── Orders ──────────────────────────────────────────
 export const createOrder = (productId, customerId, amount, quantity) =>
   fetch(`${API_BASE}/api/orders`, {
-    method: 'POST', headers: getHeaders(), body: JSON.stringify({ productId, customerId, amount, quantity })
+    method: 'POST', headers: getHeaders(true), body: JSON.stringify({ productId, customerId, amount, quantity })
   }).then(handleResponse);
 
 export const getOrders = () =>
@@ -152,6 +152,9 @@ export const getOrders = () =>
 
 export const getSellerOrders = () =>
   fetch(`${API_BASE}/api/orders/seller`, { headers: getHeaders(true) }).then(handleResponse);
+
+export const getCustomerOrders = () =>
+  fetch(`${API_BASE}/api/orders/customer`, { headers: getHeaders(true) }).then(handleResponse);
 
 export const callCourier = (orderId) =>
   fetch(`${API_BASE}/api/orders/${orderId}/call-courier`, {

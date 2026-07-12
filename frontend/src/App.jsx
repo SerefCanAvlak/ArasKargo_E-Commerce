@@ -17,6 +17,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProductsSearchPage from './pages/ProductsSearchPage';
 import SellerStorePage from './pages/SellerStorePage';
 import CargoTrackingPage from './pages/CargoTrackingPage';
+import CustomerOrdersPage from './pages/CustomerOrdersPage';
 
 import DashboardPage from './pages/seller/DashboardPage';
 import ProductsPage from './pages/seller/ProductsPage';
@@ -187,6 +188,7 @@ function App() {
         <Route path="/checkout" element={
           <CheckoutPage cart={cart} products={products} onClearCart={handleClearCart} />
         } />
+        <Route path="/siparislerim" element={<CustomerOrdersPage />} />
       </Routes>
 
       <Footer />

@@ -214,4 +214,9 @@ public class OrderService : IOrderService
     {
         return await _orderRepository.FindAsync(o => o.SellerId == sellerId);
     }
+
+    public async Task<IEnumerable<Order>> GetOrdersByCustomerIdAsync(Guid customerId)
+    {
+        return await _orderRepository.FindAsync(o => o.CustomerId == customerId);
+    }
 }

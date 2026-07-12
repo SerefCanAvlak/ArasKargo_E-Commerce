@@ -91,6 +91,7 @@ export default function CheckoutPage({ cart, products, onClearCart }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button className="btn btn-primary btn-red-primary" onClick={() => navigate('/siparislerim')}>Siparişlerimi Gör</button>
           <button className="btn btn-secondary" onClick={() => navigate('/')}>Ana Sayfaya Dön</button>
         </div>
       </div>
