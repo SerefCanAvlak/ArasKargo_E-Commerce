@@ -136,7 +136,7 @@ export default function DashboardPage() {
                       <TrendingUp size={12} /> +12.4%
                     </span>
                   </div>
-                  <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 24, position: 'relative' }}>
+                  <div style={{ height: 220, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 12, position: 'relative' }}>
                     {(() => {
                       const sales = dashboard?.dailySales || [
                         { dayName: 'Pzt', totalAmount: 0 },
@@ -152,24 +152,36 @@ export default function DashboardPage() {
                         const pct = (sale.totalAmount / maxSale) * 100;
                         const barHeight = sale.totalAmount > 0 ? Math.max(pct, 8) : 0;
                         return (
-                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }} title={`${sale.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL`}>
+                          <div key={i} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }} title={`${sale.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL`}>
+                            {/* Track Container */}
                             <div style={{
-                              width: '100%', height: `${barHeight}%`,
-                              background: sale.totalAmount > 0 
-                                ? 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)' 
-                                : 'var(--bg)',
-                              borderRadius: '6px 6px 0 0',
-                              transition: 'height 0.5s ease',
+                              width: '100%', height: 140,
+                              background: 'var(--divider)',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'flex-end',
                               position: 'relative'
                             }}>
-                              {sale.totalAmount > 0 && (
-                                <span style={{
-                                  fontSize: 9, fontWeight: 700, color: 'var(--text-muted)',
-                                  position: 'absolute', top: -18, width: '100%', textAlign: 'center'
-                                }}>
-                                  {Math.round(sale.totalAmount)}
-                                </span>
-                              )}
+                              {/* Active Sales Fill */}
+                              <div style={{
+                                width: '100%', height: `${barHeight}%`,
+                                background: sale.totalAmount > 0 
+                                  ? 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)' 
+                                  : 'transparent',
+                                borderRadius: '6px',
+                                transition: 'height 0.5s ease',
+                                position: 'relative'
+                              }}>
+                                {sale.totalAmount > 0 && (
+                                  <span style={{
+                                    fontSize: 9, fontWeight: 700, color: 'var(--text)',
+                                    position: 'absolute', top: -20, width: '100%', textAlign: 'center'
+                                  }}>
+                                    {Math.round(sale.totalAmount)}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sale.dayName}</span>
                           </div>
