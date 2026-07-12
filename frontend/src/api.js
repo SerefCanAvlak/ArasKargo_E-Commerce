@@ -9,13 +9,51 @@ const getHeaders = (includeAuth = false) => {
   return headers;
 };
 
+const fixImageUrls = (obj) => {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(fixImageUrls);
+  }
+  if (typeof obj === 'object') {
+    if (obj.images && Array.isArray(obj.images)) {
+      obj.images = obj.images.map(url => {
+        if (typeof url === 'string') {
+          if (url.includes('localhost:5086')) {
+            return url.replace(/https?:\/\/localhost:5086/g, API_BASE);
+          }
+          if (url.startsWith('/uploads')) {
+            return `${API_BASE}${url}`;
+          }
+        }
+        return url;
+      });
+    }
+    if (typeof obj.image === 'string') {
+      if (obj.image.includes('localhost:5086')) {
+        obj.image = obj.image.replace(/https?:\/\/localhost:5086/g, API_BASE);
+      } else if (obj.image.startsWith('/uploads')) {
+        obj.image = `${API_BASE}${obj.image}`;
+      }
+    }
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+          obj[key] = fixImageUrls(obj[key]);
+        }
+      }
+    }
+  }
+  return obj;
+};
+
 const handleResponse = async (res) => {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Bir hata oluştu.' }));
     throw new Error(err.message || `HTTP ${res.status}`);
   }
   if (res.status === 204) return null;
-  return res.json();
+  const data = await res.json();
+  return fixImageUrls(data);
 };
 
 // ─── Auth ────────────────────────────────────────────
