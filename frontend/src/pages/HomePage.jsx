@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, ShieldCheck, CreditCard, Zap, ArrowRight,
-  ShoppingBag, Sparkles, Smile, Star, Mail, CheckCircle2,
+  ShoppingBag, Sparkles, Smile, Star, CheckCircle2,
   ChevronRight, Heart, Gift
 } from 'lucide-react';
 import { getProducts } from '../api';
 import ProductCard from '../components/ui/ProductCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useToast } from '../components/ui/Toast';
+import mascotImg from '../assets/mascot.png';
 
 export default function HomePage({ searchQuery, onSearchChange, onAddToCart, favorites = [], onToggleFavorite }) {
   const [products, setProducts] = useState([]);
@@ -378,13 +379,7 @@ export default function HomePage({ searchQuery, onSearchChange, onAddToCart, fav
               </form>
             </div>
             <div className="newsletter-v2-right flex-center">
-              <div className="mockup-packages">
-                {/* Simulated envelope/cargo package */}
-                <div className="package-envelope">
-                  <Mail size={32} />
-                  <span>Kampanyalar</span>
-                </div>
-              </div>
+              <img src={mascotImg} alt="Aras Kargo Maskotu" className="newsletter-mascot-img" />
             </div>
           </div>
         </div>

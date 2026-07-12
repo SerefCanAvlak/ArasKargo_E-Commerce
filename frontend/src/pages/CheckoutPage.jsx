@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, CreditCard, MapPin, Truck } from 'lucide-react';
+import { CreditCard, MapPin, Truck } from 'lucide-react';
 import { createOrder, clearBasket } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
+import mascotSuccessImg from '../assets/mascot_success.png';
 
 const SEEDED_CUSTOMER_ID = 'a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d';
 
@@ -41,7 +42,7 @@ export default function CheckoutPage({ cart, products, onClearCart }) {
       let lastOrderNum = '';
       for (const item of cart) {
         const prod = getProduct(item.productId);
-        const data = await createOrder(item.productId, SEEDED_CUSTOMER_ID, prod.price * item.quantity);
+        const data = await createOrder(item.productId, SEEDED_CUSTOMER_ID, prod.price * item.quantity, item.quantity);
         lastOrderNum = data.orderNumber;
       }
 
@@ -63,12 +64,17 @@ export default function CheckoutPage({ cart, products, onClearCart }) {
   if (orderSuccess) {
     return (
       <div className="container page-content" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: '80px 24px' }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%', background: 'var(--success-bg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px'
-        }}>
-          <CheckCircle size={36} style={{ color: 'var(--success)' }} />
-        </div>
+        <img 
+          src={mascotSuccessImg} 
+          alt="Sipariş Başarılı Maskotu" 
+          style={{ 
+            display: 'block',
+            margin: '0 auto 24px',
+            maxHeight: 180, 
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.15))'
+          }} 
+        />
         <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 28, fontWeight: 700, marginBottom: 8 }}>
           Siparişiniz Alındı!
         </h2>

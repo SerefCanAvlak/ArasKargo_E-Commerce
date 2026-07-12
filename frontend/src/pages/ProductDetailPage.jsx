@@ -6,12 +6,10 @@ import {
 } from 'lucide-react';
 import { getProductBySlug, getProducts } from '../api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { useToast } from '../components/ui/Toast';
 
 export default function ProductDetailPage({ onAddToCart, favorites = [], onToggleFavorite }) {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +60,7 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
   const mainImageToShow = activeImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
 
   const handleBuyNow = async () => {
-    const success = await onAddToCart(product.id);
+    const success = await onAddToCart(product.id, qty);
     if (success) {
       navigate('/checkout');
     }
@@ -217,8 +215,7 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
                 className="btn btn-primary btn-lg btn-red-primary" 
                 style={{ flex: 1.5 }}
                 onClick={() => {
-                  onAddToCart(product.id);
-                  addToast('Ürün sepete eklendi! 🛒');
+                  onAddToCart(product.id, qty);
                 }}
               >
                 Sepete Ekle
@@ -269,8 +266,7 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
           {/* Tabs Section */}
           <div>
             <div className="product-tabs-header">
-              <div className={`tab-item ${activeTab === 'desc' ? 'active' : ''}`} onClick={() => setActiveTab('desc')}>Ürün Açıklaması</div>
-              <div className={`tab-item ${activeTab === 'spec' ? 'active' : ''}`} onClick={() => setActiveTab('spec')}>Özellikler</div>
+              <div className={`tab-item ${activeTab === 'desc' ? 'active' : ''}`} onClick={() => setActiveTab('desc')}>Açıklama</div>
               <div className={`tab-item ${activeTab === 'shipping' ? 'active' : ''}`} onClick={() => setActiveTab('shipping')}>Kargo & Teslimat</div>
               <div className={`tab-item ${activeTab === 'return' ? 'active' : ''}`} onClick={() => setActiveTab('return')}>İade Koşulları</div>
               <div className={`tab-item ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>Yorumlar (132)</div>
@@ -278,28 +274,9 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
             
             <div className="product-tab-content">
               {activeTab === 'desc' && (
-                <>
-                  <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)' }}>
-                    {product.description || 'El yapımı seramik kupa, günlük kahve ve çay keyfinize doğal bir dokunuş katıyor. Her biri elde şekillendirildiği için kendine özgü bir görünüme sahiptir. Mikrodalga ve bulaşık makinesine uygundur.'}
-                  </p>
-                  <ul className="spec-bullets-list" style={{ marginTop: 20 }}>
-                    <li>Malzeme: %100 Seramik</li>
-                    <li>Hacim: 350 ml</li>
-                    <li>Renk: Krem benekli</li>
-                    <li>El yapımıdır, küçük farklılıklar olabilir.</li>
-                  </ul>
-                </>
-              )}
-
-              {activeTab === 'spec' && (
-                <table className="spec-table">
-                  <tbody>
-                    <tr><th>Ürün Tipi</th><td>Kupa / Bardak</td></tr>
-                    <tr><th>Malzeme</th><td>Seramik</td></tr>
-                    <tr><th>Hacim</th><td>350 ml</td></tr>
-                    <tr><th>Üretim Şekli</th><td>El Yapımı</td></tr>
-                  </tbody>
-                </table>
+                <p style={{ lineHeight: 1.8, color: 'var(--text-secondary)' }}>
+                  {product.description || 'Bu ürün için henüz detaylı bir açıklama girilmemiştir.'}
+                </p>
               )}
 
               {activeTab === 'shipping' && (

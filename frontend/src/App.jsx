@@ -48,19 +48,21 @@ function App() {
   });
 
   const handleToggleFavorite = useCallback((productId) => {
+    const isAlreadyFav = favorites.includes(productId);
+    if (isAlreadyFav) {
+      addToast('Ürün favorilerinizden kaldırıldı.', 'info');
+    } else {
+      addToast('Ürün favorilerinize eklendi! ❤️');
+    }
+
     setFavorites(prev => {
-      let updated;
-      if (prev.includes(productId)) {
-        updated = prev.filter(id => id !== productId);
-        addToast('Ürün favorilerinizden kaldırıldı.', 'info');
-      } else {
-        updated = [...prev, productId];
-        addToast('Ürün favorilerinize eklendi! ❤️');
-      }
+      const updated = prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId];
       localStorage.setItem('favorites', JSON.stringify(updated));
       return updated;
     });
-  }, [addToast]);
+  }, [addToast, favorites]);
 
   const isSellerRoute = location.pathname.startsWith('/seller');
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
@@ -88,7 +90,7 @@ function App() {
     }
   };
 
-  const handleAddToCart = useCallback(async (productId) => {
+  const handleAddToCart = useCallback(async (productId, quantity = 1) => {
     if (!isAuthenticated || !isCustomer) {
       addToast('Alışveriş yapabilmek için üye girişi yapmalısınız.', 'warning');
       navigate('/login');
@@ -96,11 +98,13 @@ function App() {
     }
 
     try {
-      await addToBasket(productId, 1);
+      await addToBasket(productId, quantity);
       addToast('Ürün sepete eklendi! 🛒');
       fetchCart();
+      return true;
     } catch (err) {
       addToast('Sepete eklenemedi: ' + err.message, 'error');
+      return false;
     }
   }, [isAuthenticated, isCustomer, addToast]);
 

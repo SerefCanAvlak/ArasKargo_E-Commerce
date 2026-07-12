@@ -4,6 +4,7 @@ using ArasIsletmem.Core.DTOs;
 using ArasIsletmem.Core.Enums;
 using ArasIsletmem.Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ArasIsletmem.API.Controllers;
 
@@ -29,6 +30,20 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var orders = await _orderService.GetAllOrdersAsync();
+        return Ok(orders);
+    }
+
+    [HttpGet("seller")]
+    [Authorize(Roles = "Seller")]
+    public async Task<IActionResult> GetSellerOrders()
+    {
+        var sellerIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(sellerIdStr) || !Guid.TryParse(sellerIdStr, out var sellerGuid))
+        {
+            return Unauthorized(new { message = "Satıcı kimliği bulunamadı." });
+        }
+
+        var orders = await _orderService.GetOrdersBySellerIdAsync(sellerGuid);
         return Ok(orders);
     }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Truck, Check, CheckCircle, XCircle } from 'lucide-react';
-import { getOrders, getProducts as fetchProducts, callCourier, updateOrderStatus } from '../../api';
+import { getSellerOrders, getProducts as fetchProducts, callCourier, updateOrderStatus } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../components/ui/Toast';
@@ -24,7 +24,7 @@ export default function OrdersPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ords, prods] = await Promise.all([getOrders(), fetchProducts(1, 100)]);
+      const [ords, prods] = await Promise.all([getSellerOrders(), fetchProducts(1, 100)]);
       setOrders(ords || []);
       setProducts(prods.items || prods || []);
     } catch {

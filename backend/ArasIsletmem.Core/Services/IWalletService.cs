@@ -8,4 +8,5 @@ public interface IWalletService
 {
     Task<Wallet?> GetWalletBySellerIdAsync(Guid sellerId);
     Task TransferPendingToAvailableAsync(Guid sellerId, decimal amount);
+    Task WithdrawAvailableBalanceAsync(Guid sellerId);
 }

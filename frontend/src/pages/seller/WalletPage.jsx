@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wallet, Info } from 'lucide-react';
-import { getSellerWallet } from '../../api';
+import { getSellerWallet, withdrawWalletBalance } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../components/ui/Toast';
@@ -21,6 +21,16 @@ export default function WalletPage() {
       setWallet({ availableBalance: 0, pendingBalance: 0 });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    try {
+      const data = await withdrawWalletBalance();
+      addToast(data.message || 'Bakiyeniz banka hesabınıza aktarıldı! 🎉');
+      loadWallet();
+    } catch (err) {
+      addToast('Aktarım hatası: ' + err.message, 'error');
     }
   };
 
@@ -104,7 +114,7 @@ export default function WalletPage() {
                   <button
                     className="btn btn-primary"
                     disabled={wallet.availableBalance <= 0}
-                    onClick={() => addToast('Bakiyeniz banka hesabınıza aktarılmak üzere işleme alındı.')}
+                    onClick={handleWithdraw}
                   >
                     Banka Hesabıma Aktar
                   </button>

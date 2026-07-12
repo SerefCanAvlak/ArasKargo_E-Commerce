@@ -11,6 +11,7 @@ public class Order : BaseEntity
     public Guid CustomerId { get; set; }
     public string? CargoTrackingNumber { get; set; }
     public decimal TotalAmount { get; set; }
+    public int Quantity { get; set; }
     public OrderStatus OrderStatus { get; set; }
 
     // Navigation property

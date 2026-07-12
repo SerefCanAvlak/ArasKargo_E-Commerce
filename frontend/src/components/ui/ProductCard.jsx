@@ -54,9 +54,6 @@ export default function ProductCard({ product, onAddToCart, onNavigate, isFavori
         <div className="product-card-price">
           {product.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
         </div>
-        <div className="product-card-stock">
-          Stok: {product.stock} adet
-        </div>
         <div className="product-card-actions" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn btn-primary btn-sm"

@@ -46,9 +46,6 @@ export const getProducts = (page = 1, pageSize = 20) =>
 export const getProductBySlug = (slug) =>
   fetch(`${API_BASE}/api/products/link/${slug}`).then(handleResponse);
 
-export const getProductById = (id) =>
-  fetch(`${API_BASE}/api/products/${id}`).then(handleResponse);
-
 export const getSellerProducts = (page = 1, pageSize = 50) =>
   fetch(`${API_BASE}/api/products/seller?page=${page}&pageSize=${pageSize}`, {
     headers: getHeaders(true)
@@ -105,13 +102,16 @@ export const clearBasket = () =>
   }).then(handleResponse);
 
 // ─── Orders ──────────────────────────────────────────
-export const createOrder = (productId, customerId, amount) =>
+export const createOrder = (productId, customerId, amount, quantity) =>
   fetch(`${API_BASE}/api/orders`, {
-    method: 'POST', headers: getHeaders(), body: JSON.stringify({ productId, customerId, amount })
+    method: 'POST', headers: getHeaders(), body: JSON.stringify({ productId, customerId, amount, quantity })
   }).then(handleResponse);
 
 export const getOrders = () =>
   fetch(`${API_BASE}/api/orders`).then(handleResponse);
+
+export const getSellerOrders = () =>
+  fetch(`${API_BASE}/api/orders/seller`, { headers: getHeaders(true) }).then(handleResponse);
 
 export const callCourier = (orderId) =>
   fetch(`${API_BASE}/api/orders/${orderId}/call-courier`, {
@@ -129,6 +129,11 @@ export const getSellerDashboard = () =>
 
 export const getSellerWallet = () =>
   fetch(`${API_BASE}/api/seller/wallet`, { headers: getHeaders(true) }).then(handleResponse);
+
+export const withdrawWalletBalance = () =>
+  fetch(`${API_BASE}/api/seller/wallet/withdraw`, {
+    method: 'POST', headers: getHeaders(true)
+  }).then(handleResponse);
 
 export const getCategories = () =>
   fetch(`${API_BASE}/api/categories`).then(handleResponse);

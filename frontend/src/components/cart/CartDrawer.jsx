@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, X, Trash2 } from 'lucide-react';
+import mascotEmptyImg from '../../assets/mascot_empty.png';
 
 export default function CartDrawer({ isOpen, onClose, cart, products, onUpdateQty, onRemove }) {
   const navigate = useNavigate();
@@ -32,10 +33,22 @@ export default function CartDrawer({ isOpen, onClose, cart, products, onUpdateQt
 
         <div className="cart-drawer-body">
           {cart.length === 0 ? (
-            <div className="empty-state" style={{ padding: '60px 0' }}>
-              <ShoppingCart size={40} />
-              <h3>Sepetiniz boş</h3>
-              <p>Beğendiğiniz ürünleri sepete ekleyerek alışverişe başlayın.</p>
+            <div className="empty-state" style={{ padding: '32px 16px', textAlign: 'center' }}>
+              <img 
+                src={mascotEmptyImg} 
+                alt="Boş Sepet Maskotu" 
+                style={{ 
+                  display: 'block',
+                  margin: '0 auto 16px',
+                  maxHeight: 140, 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))'
+                }} 
+              />
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Sepetiniz Boş</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 220, margin: '0 auto' }}>
+                Beğendiğiniz ürünleri sepete ekleyerek alışverişe başlayın.
+              </p>
             </div>
           ) : (
             cart.map((item, idx) => {

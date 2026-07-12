@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Copy, ExternalLink, Trash2, X, Upload, CheckCircle2 } from 'lucide-react';
-import { getSellerProducts, createProduct, deleteProduct, uploadProductImages, getCategories } from '../../api';
+import { Plus, Copy, ExternalLink, Trash2, X, Upload, CheckCircle2, Edit } from 'lucide-react';
+import { getSellerProducts, createProduct, updateProduct, deleteProduct, uploadProductImages, getCategories } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../components/ui/Toast';
@@ -10,6 +10,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const { addToast } = useToast();
 
   const [form, setForm] = useState({ title: '', description: '', price: '', stock: '', categoryId: '' });
@@ -84,6 +85,20 @@ export default function ProductsPage() {
     });
   };
 
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
+    setForm({
+      title: product.title,
+      description: product.description,
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      categoryId: product.categoryId || ''
+    });
+    setUploadedImages(product.images || []);
+    setCoverImage(product.coverImage || (product.images?.[0] || ''));
+    setModalOpen(true);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
 
@@ -116,7 +131,7 @@ export default function ProductsPage() {
     }
     
     try {
-      await createProduct({
+      const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
         price: parsedPrice,
@@ -124,16 +139,24 @@ export default function ProductsPage() {
         images: uploadedImages,
         coverImage: coverImage || uploadedImages[0],
         categoryId: form.categoryId
-      });
+      };
+
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+        addToast('Ürün başarıyla güncellendi!');
+      } else {
+        await createProduct(payload);
+        addToast('Ürün başarıyla eklendi!');
+      }
       
-      addToast('Ürün başarıyla eklendi!');
       setModalOpen(false);
+      setEditingProduct(null);
       setForm({ title: '', description: '', price: '', stock: '', categoryId: categories[0]?.id || '' });
       setUploadedImages([]);
       setCoverImage('');
       loadProducts();
     } catch (err) {
-      addToast('Ürün eklenemedi: ' + err.message, 'error');
+      addToast((editingProduct ? 'Ürün güncellenemedi: ' : 'Ürün eklenemedi: ') + err.message, 'error');
     }
   };
 
@@ -154,6 +177,14 @@ export default function ProductsPage() {
     addToast('Link kopyalandı! 📋');
   };
 
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingProduct(null);
+    setForm({ title: '', description: '', price: '', stock: '', categoryId: categories[0]?.id || '' });
+    setUploadedImages([]);
+    setCoverImage('');
+  };
+
   const getCategoryName = (catId) => {
     const cat = categories.find(c => c.id === catId);
     return cat ? cat.name : 'Genel';
@@ -168,7 +199,7 @@ export default function ProductsPage() {
             <h1 className="seller-page-title">Ürünlerim</h1>
             <p className="seller-page-subtitle">MongoDB kataloğunuzdaki ürünleri yönetin.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+          <button className="btn btn-primary" onClick={() => { setEditingProduct(null); setModalOpen(true); }}>
             <Plus size={18} /> Yeni Ürün Ekle
           </button>
         </div>
@@ -178,7 +209,7 @@ export default function ProductsPage() {
             <div className="empty-state">
               <h3>Henüz ürün eklenmemiş</h3>
               <p>İlk ürününüzü ekleyerek satışa başlayın.</p>
-              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setModalOpen(true)}>
+              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => { setEditingProduct(null); setModalOpen(true); }}>
                 <Plus size={16} /> İlk Ürünü Ekle
               </button>
             </div>
@@ -216,6 +247,9 @@ export default function ProductsPage() {
                       <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => copyLink(product.slug)}>
                         <Copy size={12} /> Linki Kopyala
                       </button>
+                      <button className="btn btn-secondary btn-sm btn-icon" onClick={() => handleEditClick(product)} title="Düzenle">
+                        <Edit size={14} />
+                      </button>
                       <a href={`/products/${product.slug}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm btn-icon">
                         <ExternalLink size={14} />
                       </a>
@@ -235,8 +269,8 @@ export default function ProductsPage() {
           <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: 600 }}>
               <div className="modal-header">
-                <h3 className="modal-title">Yeni Ürün Ekle</h3>
-                <button className="btn btn-ghost btn-icon" onClick={() => setModalOpen(false)}>
+                <h3 className="modal-title">{editingProduct ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}</h3>
+                <button className="btn btn-ghost btn-icon" onClick={closeModal}>
                   <X size={20} />
                 </button>
               </div>
@@ -373,9 +407,11 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, justify: 'flex-end', marginTop: 16 }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>İptal</button>
-                  <button type="submit" className="btn btn-primary" disabled={uploading}>Ürünü Kaydet</button>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+                  <button type="button" className="btn btn-secondary" onClick={closeModal}>İptal</button>
+                  <button type="submit" className="btn btn-primary" disabled={uploading}>
+                    {editingProduct ? 'Değişiklikleri Kaydet' : 'Ürünü Kaydet'}
+                  </button>
                 </div>
               </form>
             </div>

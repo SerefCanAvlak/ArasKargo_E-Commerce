@@ -39,4 +39,18 @@ public class WalletService : IWalletService
         _walletRepository.Update(wallet);
         await _unitOfWork.CommitAsync();
     }
+
+    public async Task WithdrawAvailableBalanceAsync(Guid sellerId)
+    {
+        var wallet = await GetWalletBySellerIdAsync(sellerId);
+        if (wallet == null)
+            throw new InvalidOperationException("Satıcıya ait cüzdan bulunamadı.");
+
+        if (wallet.AvailableBalance <= 0)
+            throw new InvalidOperationException("Çekilebilir bakiye bulunmamaktadır.");
+
+        wallet.AvailableBalance = 0;
+        _walletRepository.Update(wallet);
+        await _unitOfWork.CommitAsync();
+    }
 }

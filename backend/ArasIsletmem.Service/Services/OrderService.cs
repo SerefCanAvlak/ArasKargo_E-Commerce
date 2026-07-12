@@ -18,19 +18,22 @@ public class OrderService : IOrderService
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
     private readonly IMongoRepository<Product> _productRepository;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IRepository<Wallet> _walletRepository;
 
     public OrderService(
         IRepository<Order> orderRepository, 
         IUnitOfWork unitOfWork, 
         IRabbitMqPublisher rabbitMqPublisher,
         IMongoRepository<Product> productRepository,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IRepository<Wallet> walletRepository)
     {
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
         _rabbitMqPublisher = rabbitMqPublisher;
         _productRepository = productRepository;
         _scopeFactory = scopeFactory;
+        _walletRepository = walletRepository;
     }
 
     public async Task<string> CreateOrderAsync(OrderCreateDto orderDto)
@@ -39,8 +42,23 @@ public class OrderService : IOrderService
 
         // Dynamically fetch product seller id
         var product = await _productRepository.GetByIdAsync(orderDto.ProductId);
+        if (product == null)
+        {
+            throw new ArgumentException("Sipariş verilmek istenen ürün bulunamadı.");
+        }
+
+        // Stok Kontrolü ve Düşüşü
+        var qty = orderDto.Quantity <= 0 ? 1 : orderDto.Quantity;
+        if (product.Stock < qty)
+        {
+            throw new InvalidOperationException($"Yetersiz stok! Mevcut stok: {product.Stock}");
+        }
+
+        product.Stock -= qty;
+        await _productRepository.UpdateAsync(product.Id, product);
+
         var sellerId = Guid.Parse("d3b07384-d113-4956-a55e-214545645645"); // default fallback
-        if (product != null && !string.IsNullOrEmpty(product.SellerId) && Guid.TryParse(product.SellerId, out var parsedGuid))
+        if (!string.IsNullOrEmpty(product.SellerId) && Guid.TryParse(product.SellerId, out var parsedGuid))
         {
             sellerId = parsedGuid;
         }
@@ -52,8 +70,30 @@ public class OrderService : IOrderService
             TotalAmount = orderDto.Amount,
             OrderNumber = $"#{new Random().Next(1000, 9999)}",
             OrderStatus = OrderStatus.PaymentReceived,
-            SellerId = sellerId
+            SellerId = sellerId,
+            Quantity = qty
         };
+
+        // Increase Seller Wallet Pending Balance
+        var wallets = await _walletRepository.FindAsync(w => w.SellerId == sellerId);
+        var wallet = wallets.FirstOrDefault();
+        if (wallet == null)
+        {
+            wallet = new Wallet
+            {
+                SellerId = sellerId,
+                AvailableBalance = 0,
+                PendingBalance = orderDto.Amount,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            await _walletRepository.AddAsync(wallet);
+        }
+        else
+        {
+            wallet.PendingBalance += orderDto.Amount;
+            _walletRepository.Update(wallet);
+        }
 
         await _orderRepository.AddAsync(order);
         await _unitOfWork.CommitAsync();

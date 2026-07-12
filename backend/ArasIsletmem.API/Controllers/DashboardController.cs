@@ -59,4 +59,27 @@ public class DashboardController : ControllerBase
             TotalBalance = wallet.AvailableBalance + wallet.PendingBalance
         });
     }
+
+    /// <summary>
+    /// Satıcının çekilebilir bakiyesini banka hesabına aktarır (sıfırlar).
+    /// </summary>
+    [HttpPost("wallet/withdraw")]
+    public async Task<IActionResult> Withdraw()
+    {
+        var sellerIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(sellerIdClaim) || !Guid.TryParse(sellerIdClaim, out var sellerId))
+        {
+            return Unauthorized(new { message = "Satıcı kimliği bulunamadı." });
+        }
+
+        try
+        {
+            await _walletService.WithdrawAvailableBalanceAsync(sellerId);
+            return Ok(new { message = "Çekilebilir bakiyeniz banka hesabınıza başarıyla aktarıldı." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
