@@ -191,17 +191,6 @@ export default function ProductDetailPage({ onAddToCart, favorites = [], onToggl
               </div>
             </div>
 
-            {/* Renk Seçenekleri (Static simulation) */}
-            <div style={{ marginTop: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>Renk Seçenekleri</div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {product.images?.slice(0, 3).map((img, i) => (
-                  <div key={i} className="color-option-card active" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: i === 0 ? '2px solid var(--primary)' : '1px solid var(--border)', cursor: 'pointer' }}>
-                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Quantity & Buy CTAs */}
             <div className="product-v2-cta-row">
