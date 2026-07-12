@@ -35,8 +35,9 @@ const fixImageUrls = (obj) => {
               if (item.startsWith('uploads/products/')) {
                 return `${API_BASE}/${item}`;
               }
+              return item;
             }
-            return item;
+            return fixImageUrls(item);
           });
         } else if (typeof val === 'object' && val !== null) {
           obj[key] = fixImageUrls(val);
