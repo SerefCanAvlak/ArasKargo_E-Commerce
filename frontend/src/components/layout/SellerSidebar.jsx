@@ -26,10 +26,10 @@ export default function SellerSidebar() {
 
   return (
     <aside className="seller-sidebar">
-      <div className="seller-sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+      <Link to="/seller/dashboard" className="seller-sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, textDecoration: 'none', cursor: 'pointer' }}>
         <img src={logoImg} alt="Aras İşletmem" style={{ height: '34px', width: 'auto', objectFit: 'contain' }} />
         <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, color: 'var(--primary)', paddingLeft: 2 }}>Satıcı Paneli</span>
-      </div>
+      </Link>
 
       <nav className="sidebar-nav">
         {menuItems.map(item => (
