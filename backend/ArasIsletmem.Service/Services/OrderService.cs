@@ -8,6 +8,8 @@ using ArasIsletmem.Core.Repositories;
 using ArasIsletmem.Core.Services;
 using ArasIsletmem.Core.UnitOfWorks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.SignalR;
+using ArasIsletmem.Service.Hubs;
 
 namespace ArasIsletmem.Service.Services;
 
@@ -19,6 +21,8 @@ public class OrderService : IOrderService
     private readonly IMongoRepository<Product> _productRepository;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRepository<Wallet> _walletRepository;
+    private readonly IHubContext<DashboardHub> _hubContext;
+    private readonly IDashboardService _dashboardService;
 
     public OrderService(
         IRepository<Order> orderRepository, 
@@ -26,7 +30,9 @@ public class OrderService : IOrderService
         IRabbitMqPublisher rabbitMqPublisher,
         IMongoRepository<Product> productRepository,
         IServiceScopeFactory scopeFactory,
-        IRepository<Wallet> walletRepository)
+        IRepository<Wallet> walletRepository,
+        IHubContext<DashboardHub> hubContext,
+        IDashboardService dashboardService)
     {
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
@@ -34,6 +40,8 @@ public class OrderService : IOrderService
         _productRepository = productRepository;
         _scopeFactory = scopeFactory;
         _walletRepository = walletRepository;
+        _hubContext = hubContext;
+        _dashboardService = dashboardService;
     }
 
     public async Task<string> CreateOrderAsync(OrderCreateDto orderDto)
@@ -101,6 +109,14 @@ public class OrderService : IOrderService
         // Kargo entegrasyonu için kuyruğa mesaj fırlat (Consumer takip no üretecek)
         _rabbitMqPublisher.PublishOrderPlacedEvent(order.Id, order.OrderNumber);
 
+        // Real-time update via SignalR
+        try
+        {
+            var updatedDashboard = await _dashboardService.GetSellerDashboardAsync(sellerId);
+            await _hubContext.Clients.Group(sellerId.ToString()).SendAsync("ReceiveDashboardUpdate", updatedDashboard);
+        }
+        catch {}
+
         return order.OrderNumber;
     }
 
@@ -122,6 +138,13 @@ public class OrderService : IOrderService
             order.OrderStatus = status;
             _orderRepository.Update(order);
             await _unitOfWork.CommitAsync();
+
+            try
+            {
+                var updatedDashboard = await _dashboardService.GetSellerDashboardAsync(order.SellerId);
+                await _hubContext.Clients.Group(order.SellerId.ToString()).SendAsync("ReceiveDashboardUpdate", updatedDashboard);
+            }
+            catch {}
         }
     }
 
@@ -142,6 +165,13 @@ public class OrderService : IOrderService
         _orderRepository.Update(order);
         await _unitOfWork.CommitAsync();
 
+        try
+        {
+            var updatedDashboard = await _dashboardService.GetSellerDashboardAsync(order.SellerId);
+            await _hubContext.Clients.Group(order.SellerId.ToString()).SendAsync("ReceiveDashboardUpdate", updatedDashboard);
+        }
+        catch {}
+
         // 5 minutes later, automatically mark as Delivered (simulated live flow)
         _ = Task.Run(async () =>
         {
@@ -159,6 +189,15 @@ public class OrderService : IOrderService
                         delayedOrder.OrderStatus = OrderStatus.Delivered;
                         orderRepo.Update(delayedOrder);
                         await uow.CommitAsync();
+
+                        try
+                        {
+                            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DashboardHub>>();
+                            var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
+                            var updatedDashboard = await dashboardService.GetSellerDashboardAsync(delayedOrder.SellerId);
+                            await hubContext.Clients.Group(delayedOrder.SellerId.ToString()).SendAsync("ReceiveDashboardUpdate", updatedDashboard);
+                        }
+                        catch {}
                     }
                 }
             }

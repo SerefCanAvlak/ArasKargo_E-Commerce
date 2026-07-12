@@ -7,9 +7,12 @@ using ArasIsletmem.Core.Entities;
 using ArasIsletmem.Core.Enums;
 using ArasIsletmem.Core.Repositories;
 using ArasIsletmem.Core.UnitOfWorks;
+using ArasIsletmem.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using ArasIsletmem.Service.Hubs;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -114,6 +117,18 @@ public class CargoConsumerWorker : BackgroundService
                             "📦 Sipariş {OrderNumber} için kargo kodu üretildi: {TrackingNumber}",
                             orderEvent.OrderNumber,
                             cargoTrackingNumber);
+
+                        try
+                        {
+                            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DashboardHub>>();
+                            var dashboardService = scope.ServiceProvider.GetRequiredService<IDashboardService>();
+                            var updatedDashboard = await dashboardService.GetSellerDashboardAsync(order.SellerId);
+                            await hubContext.Clients.Group(order.SellerId.ToString()).SendAsync("ReceiveDashboardUpdate", updatedDashboard);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "SignalR dashboard update failed in CargoConsumerWorker.");
+                        }
                     }
                     else
                     {

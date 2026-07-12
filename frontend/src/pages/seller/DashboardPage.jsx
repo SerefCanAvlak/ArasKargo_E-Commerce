@@ -1,15 +1,61 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Package, Wallet, CheckCircle, TrendingUp } from 'lucide-react';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 import { getSellerDashboard, getSellerWallet } from '../../api';
 import SellerSidebar from '../../components/layout/SellerSidebar';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState(null);
   const [wallet, setWallet] = useState({ availableBalance: 0, pendingBalance: 0 });
   const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+
+    // Decode seller ID from JWT token
+    let sellerId = '';
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        sellerId = payload.nameid || payload.unique_name || payload.sub;
+      } catch (err) {
+        console.error('Error decoding JWT token:', err);
+      }
+    }
+
+    if (!sellerId) return;
+
+    // Connect to SignalR Hub
+    const connection = new HubConnectionBuilder()
+      .withUrl('http://localhost:5086/hub/dashboard')
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+      .then(() => {
+        console.log('SignalR Dashboard Hub connected.');
+        connection.invoke('JoinSellerGroup', sellerId)
+          .then(() => console.log(`Joined SignalR group for seller: ${sellerId}`))
+          .catch(err => console.error('Join group failed:', err));
+      })
+      .catch(err => console.error('Connection failed:', err));
+
+    connection.on('ReceiveDashboardUpdate', (updatedData) => {
+      console.log('Real-time dashboard update received:', updatedData);
+      setDashboard(updatedData);
+      setWallet({
+        availableBalance: updatedData.availableBalance,
+        pendingBalance: updatedData.pendingBalance
+      });
+    });
+
+    return () => {
+      connection.stop();
+    };
+  }, [token]);
 
   const loadData = async () => {
     setLoading(true);
@@ -91,21 +137,44 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 24, position: 'relative' }}>
-                    {['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((day, i) => {
-                      const heights = [30, 45, 35, 65, 50, 85, 95];
-                      const isHigh = i >= 5;
-                      return (
-                        <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                          <div style={{
-                            width: '100%', height: `${heights[i]}%`,
-                            background: isHigh ? 'var(--primary)' : 'var(--bg)',
-                            borderRadius: '6px 6px 0 0',
-                            transition: 'height 0.5s ease'
-                          }} />
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{day}</span>
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      const sales = dashboard?.dailySales || [
+                        { dayName: 'Pzt', totalAmount: 0 },
+                        { dayName: 'Sal', totalAmount: 0 },
+                        { dayName: 'Çar', totalAmount: 0 },
+                        { dayName: 'Per', totalAmount: 0 },
+                        { dayName: 'Cum', totalAmount: 0 },
+                        { dayName: 'Cmt', totalAmount: 0 },
+                        { dayName: 'Paz', totalAmount: 0 }
+                      ];
+                      const maxSale = Math.max(...sales.map(s => s.totalAmount), 1);
+                      return sales.map((sale, i) => {
+                        const pct = (sale.totalAmount / maxSale) * 100;
+                        const barHeight = sale.totalAmount > 0 ? Math.max(pct, 8) : 0;
+                        const isHigh = i >= 5;
+                        return (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }} title={`${sale.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL`}>
+                            <div style={{
+                              width: '100%', height: `${barHeight}%`,
+                              background: isHigh ? 'var(--primary)' : 'var(--bg)',
+                              borderRadius: '6px 6px 0 0',
+                              transition: 'height 0.5s ease',
+                              position: 'relative'
+                            }}>
+                              {sale.totalAmount > 0 && (
+                                <span style={{
+                                  fontSize: 9, fontWeight: 700, color: 'var(--text-muted)',
+                                  position: 'absolute', top: -18, width: '100%', textAlign: 'center'
+                                }}>
+                                  {Math.round(sale.totalAmount)}
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sale.dayName}</span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>

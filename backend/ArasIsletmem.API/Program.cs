@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ArasIsletmem.Service.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,11 +21,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
+
+builder.Services.AddSignalR();
 
 // Swagger JWT Config
 builder.Services.AddSwaggerGen(c =>
@@ -151,5 +155,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<DashboardHub>("/hub/dashboard");
 
 app.Run();

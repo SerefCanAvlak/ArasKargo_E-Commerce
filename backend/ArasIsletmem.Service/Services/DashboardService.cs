@@ -70,6 +70,27 @@ public class DashboardService : IDashboardService
             })
             .ToList();
 
+        // Son 7 günün günlük satış verisini hesapla (Pazartesi, Salı vb.)
+        var today = DateTime.UtcNow.Date;
+        var dailySales = new List<DailySaleDto>();
+        string[] turkishDays = { "Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt" };
+
+        for (int i = 6; i >= 0; i--)
+        {
+            var targetDate = today.AddDays(-i);
+            var dayName = turkishDays[(int)targetDate.DayOfWeek];
+
+            var dailyTotal = ordersList
+                .Where(o => o.CreatedAt.Date == targetDate && o.OrderStatus != OrderStatus.Cancelled)
+                .Sum(o => o.TotalAmount);
+
+            dailySales.Add(new DailySaleDto
+            {
+                DayName = dayName,
+                TotalAmount = dailyTotal
+            });
+        }
+
         return new DashboardResponseDto
         {
             TotalSales = totalSales,
@@ -78,7 +99,8 @@ public class DashboardService : IDashboardService
             CargoRequestedCount = cargoRequestedCount,
             AvailableBalance = wallet?.AvailableBalance ?? 0,
             PendingBalance = wallet?.PendingBalance ?? 0,
-            RecentOrders = recentOrders
+            RecentOrders = recentOrders,
+            DailySales = dailySales
         };
     }
 }

@@ -12,6 +12,13 @@ public class DashboardResponseDto
     public decimal AvailableBalance { get; set; }
     public decimal PendingBalance { get; set; }
     public List<RecentOrderDto> RecentOrders { get; set; } = new();
+    public List<DailySaleDto> DailySales { get; set; } = new();
+}
+
+public class DailySaleDto
+{
+    public string DayName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
 }
 
 public class RecentOrderDto
