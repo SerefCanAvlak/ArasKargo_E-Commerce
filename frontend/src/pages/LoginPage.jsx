@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
+import logoImg from '../assets/Aras_Isletmem_Logo.png';
 
 export default function LoginPage() {
   const [role, setRole] = useState('Customer');
@@ -45,16 +46,11 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-brand">
-          <div className="navbar-brand-icon" style={{ width: 40, height: 40 }}>
-            <LayoutDashboard size={20} />
-          </div>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 700 }}>Aras İşletmem</h2>
-            <span style={{ fontSize: 10, color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Giriş Yap
-            </span>
-          </div>
+        <div className="auth-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 24, gap: 12, width: '100%' }}>
+          <img src={logoImg} alt="Aras İşletmem Logo" style={{ height: 40, objectFit: 'contain' }} />
+          <span style={{ fontSize: 10, color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Giriş Yap
+          </span>
         </div>
 
         <div className="auth-tabs">

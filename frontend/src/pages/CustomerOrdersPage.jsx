@@ -15,6 +15,8 @@ export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   useEffect(() => {
     loadOrders();
@@ -40,6 +42,9 @@ export default function CustomerOrdersPage() {
   const getProductInfo = (id) => {
     return products.find(p => p.id === id) || { title: 'Ürün Bilgisi Yükleniyor...', coverImage: '', price: 0 };
   };
+
+  const totalPages = Math.ceil(orders.length / pageSize);
+  const paginatedOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div style={{ maxWidth: 1000, margin: '40px auto', padding: '0 20px', minHeight: '80vh' }}>
@@ -67,84 +72,123 @@ export default function CustomerOrdersPage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {orders.map((order) => {
-            const prod = getProductInfo(order.productId);
-            const status = statusMap[order.orderStatus] || { label: 'Bilinmeyen Durum', cls: 'badge-received', desc: '' };
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {paginatedOrders.map((order) => {
+              const prod = getProductInfo(order.productId);
+              const status = statusMap[order.orderStatus] || { label: 'Bilinmeyen Durum', cls: 'badge-received', desc: '' };
 
-            return (
-              <div key={order.id} className="card" style={{ overflow: 'hidden' }}>
-                {/* Order Header */}
-                <div style={{
-                  background: 'var(--bg)',
-                  padding: '16px 24px',
-                  borderBottom: '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 12
-                }}>
-                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Sipariş Numarası</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>#{order.orderNumber}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Toplam Tutar</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>{order.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</div>
-                    </div>
-                  </div>
-                  <div>
-                    <span className={`badge ${status.cls}`} style={{ fontSize: 12, padding: '6px 12px', fontWeight: 700 }}>
-                      {status.label}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Order Body */}
-                <div style={{ padding: 24, display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg)' }}>
-                    <img
-                      src={prod.coverImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200'}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{prod.title}</h4>
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Adet: <strong>{order.quantity}</strong></p>
-                  </div>
-                  
-                  {/* Shipping info or helper */}
+              return (
+                <div key={order.id} className="card" style={{ overflow: 'hidden' }}>
+                  {/* Order Header */}
                   <div style={{
-                    minWidth: 260,
-                    padding: 16,
                     background: 'var(--bg)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border)',
-                    fontSize: 13
+                    padding: '16px 24px',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 12
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontWeight: 600, color: 'var(--text)' }}>
-                      <Truck size={16} style={{ color: 'var(--primary)' }} />
-                      <span>Aras Kargo Kargo Durumu</span>
-                    </div>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>{status.desc}</p>
-                    
-                    {order.cargoTrackingNumber ? (
-                      <div style={{ background: 'var(--card-bg)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Takip No:</span>
-                        <strong style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'monospace' }}>{order.cargoTrackingNumber}</strong>
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Sipariş Numarası</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>#{order.orderNumber}</div>
                       </div>
-                    ) : order.orderStatus < 3 ? (
-                      <span style={{ color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic' }}>Kargo kodu bekleniyor...</span>
-                    ) : null}
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Toplam Tutar</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>{order.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</div>
+                      </div>
+                    </div>
+                    <div>
+                      <span className={`badge ${status.cls}`} style={{ fontSize: 12, padding: '6px 12px', fontWeight: 700 }}>
+                        {status.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Order Body */}
+                  <div style={{ padding: 24, display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg)' }}>
+                      <img
+                        src={prod.coverImage || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200'}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{prod.title}</h4>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Adet: <strong>{order.quantity}</strong></p>
+                    </div>
+                    
+                    {/* Shipping info or helper */}
+                    <div style={{
+                      minWidth: 260,
+                      padding: 16,
+                      background: 'var(--bg)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border)',
+                      fontSize: 13
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontWeight: 600, color: 'var(--text)' }}>
+                        <Truck size={16} style={{ color: 'var(--primary)' }} />
+                        <span>Aras Kargo Kargo Durumu</span>
+                      </div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>{status.desc}</p>
+                      
+                      {order.cargoTrackingNumber ? (
+                        <div style={{ background: 'var(--card-bg)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Takip No:</span>
+                          <strong style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'monospace' }}>{order.cargoTrackingNumber}</strong>
+                        </div>
+                      ) : order.orderStatus < 3 ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic' }}>Kargo kodu bekleniyor...</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={currentPage === 1}
+                onClick={() => {
+                  setCurrentPage(prev => prev - 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                Geri
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button 
+                  key={i} 
+                  className={`btn btn-sm ${currentPage === i + 1 ? 'btn-primary btn-red-primary' : 'btn-secondary'}`}
+                  onClick={() => {
+                    setCurrentPage(i + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={currentPage === totalPages}
+                onClick={() => {
+                  setCurrentPage(prev => prev + 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                İleri
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

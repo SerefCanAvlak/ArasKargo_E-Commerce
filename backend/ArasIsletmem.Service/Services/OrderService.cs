@@ -122,7 +122,8 @@ public class OrderService : IOrderService
 
     public async Task<IEnumerable<Order>> GetAllOrdersAsync()
     {
-        return await _orderRepository.GetAllAsync();
+        var orders = await _orderRepository.GetAllAsync();
+        return orders.OrderByDescending(o => o.CreatedAt);
     }
 
     public async Task<Order?> GetOrderByIdAsync(Guid id)
@@ -212,11 +213,13 @@ public class OrderService : IOrderService
 
     public async Task<IEnumerable<Order>> GetOrdersBySellerIdAsync(Guid sellerId)
     {
-        return await _orderRepository.FindAsync(o => o.SellerId == sellerId);
+        var orders = await _orderRepository.FindAsync(o => o.SellerId == sellerId);
+        return orders.OrderByDescending(o => o.CreatedAt);
     }
 
     public async Task<IEnumerable<Order>> GetOrdersByCustomerIdAsync(Guid customerId)
     {
-        return await _orderRepository.FindAsync(o => o.CustomerId == customerId);
+        var orders = await _orderRepository.FindAsync(o => o.CustomerId == customerId);
+        return orders.OrderByDescending(o => o.CreatedAt);
     }
 }

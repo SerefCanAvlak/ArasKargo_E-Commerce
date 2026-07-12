@@ -17,6 +17,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const { addToast } = useToast();
 
   useEffect(() => { loadData(); }, []);
@@ -27,6 +29,7 @@ export default function OrdersPage() {
       const [ords, prods] = await Promise.all([getSellerOrders(), fetchProducts(1, 100)]);
       setOrders(ords || []);
       setProducts(prods.items || prods || []);
+      setCurrentPage(1);
     } catch {
       setOrders([]);
     } finally {
@@ -70,6 +73,9 @@ export default function OrdersPage() {
     }
   };
 
+  const totalPages = Math.ceil(orders.length / pageSize);
+  const paginatedOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="seller-layout">
       <SellerSidebar />
@@ -105,7 +111,7 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => {
+                  {paginatedOrders.map(order => {
                     const status = statusMap[order.orderStatus] || statusMap[1];
                     return (
                       <tr key={order.id}>
@@ -161,6 +167,34 @@ export default function OrdersPage() {
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
+                <button 
+                  className="btn btn-secondary btn-sm" 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                >
+                  Geri
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button 
+                    key={i} 
+                    className={`btn btn-sm ${currentPage === i + 1 ? 'btn-primary btn-red-primary' : 'btn-secondary'}`}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button 
+                  className="btn btn-secondary btn-sm" 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                >
+                  İleri
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

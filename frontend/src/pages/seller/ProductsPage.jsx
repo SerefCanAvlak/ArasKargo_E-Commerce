@@ -11,6 +11,8 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
   const { addToast } = useToast();
 
   const [form, setForm] = useState({ title: '', description: '', price: '', stock: '', categoryId: '' });
@@ -28,6 +30,7 @@ export default function ProductsPage() {
     try {
       const data = await getSellerProducts();
       setProducts(data.items || []);
+      setCurrentPage(1);
     } catch {
       setProducts([]);
     } finally {
@@ -190,6 +193,9 @@ export default function ProductsPage() {
     return cat ? cat.name : 'Genel';
   };
 
+  const totalPages = Math.ceil(products.length / pageSize);
+  const paginatedProducts = products.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="seller-layout">
       <SellerSidebar />
@@ -215,8 +221,9 @@ export default function ProductsPage() {
             </div>
           </div>
         ) : (
-          <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-            {products.map(product => {
+          <>
+            <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+            {paginatedProducts.map(product => {
               const imgSrc = product.coverImage || product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400';
               return (
                 <div key={product.id} className="card" style={{ overflow: 'hidden' }}>
@@ -262,7 +269,45 @@ export default function ProductsPage() {
               );
             })}
           </div>
-        )}
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32, marginBottom: 16 }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={currentPage === 1}
+                onClick={() => {
+                  setCurrentPage(prev => prev - 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                Geri
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button 
+                  key={i} 
+                  className={`btn btn-sm ${currentPage === i + 1 ? 'btn-primary btn-red-primary' : 'btn-secondary'}`}
+                  onClick={() => {
+                    setCurrentPage(i + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={currentPage === totalPages}
+                onClick={() => {
+                  setCurrentPage(prev => prev + 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                İleri
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
         {/* Add Product Modal */}
         {modalOpen && (
