@@ -18,21 +18,23 @@ const fixImageUrls = (obj) => {
     if (obj.images && Array.isArray(obj.images)) {
       obj.images = obj.images.map(url => {
         if (typeof url === 'string') {
-          if (url.includes('localhost:5086')) {
-            return url.replace(/https?:\/\/localhost:5086/g, API_BASE);
+          const idx = url.indexOf('/uploads/products/');
+          if (idx !== -1) {
+            return `${API_BASE}${url.substring(idx)}`;
           }
-          if (url.startsWith('/uploads')) {
-            return `${API_BASE}${url}`;
+          if (url.startsWith('uploads/products/')) {
+            return `${API_BASE}/${url}`;
           }
         }
         return url;
       });
     }
     if (typeof obj.image === 'string') {
-      if (obj.image.includes('localhost:5086')) {
-        obj.image = obj.image.replace(/https?:\/\/localhost:5086/g, API_BASE);
-      } else if (obj.image.startsWith('/uploads')) {
-        obj.image = `${API_BASE}${obj.image}`;
+      const idx = obj.image.indexOf('/uploads/products/');
+      if (idx !== -1) {
+        obj.image = `${API_BASE}${obj.image.substring(idx)}`;
+      } else if (obj.image.startsWith('uploads/products/')) {
+        obj.image = `${API_BASE}/${obj.image}`;
       }
     }
     for (const key in obj) {
